@@ -9,6 +9,7 @@ import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import pandas as pd
+import numpy as np
 
 
 today = datetime.date.today()
@@ -22,48 +23,78 @@ WR2_TEXT = 'SGl10k.1.10'
 
 def main():
     #start_date, end_date = get_date()
-    start_date = '01.11.2011'
-    end_date = '10.11.2020'
-    get_values_from_pv(start_date, end_date)
-    #make_graph()
+    #get_values_from_pv(start_date, end_date)
+    make_graph()
 
 
 def make_graph():
     global path, WR1_TEXT, WR2_TEXT
 
-    data = shelve.open(path)
-    for k, item in sorted(data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
-        #print (k)
-        pass
+    pv_data = shelve.open(path)
+    filename = 'values.xlsx'
+    datafile = open(filename, 'w')
+    datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\n')
     
-    df = pd.DataFrame(columns=('Datum', 'Jahr', 'HausGesamt', 'WR1', 'WR2'))
+    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'HausGesamt', 'WR1', 'WR2'))
     i=0
-    for k, item in sorted(data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
-        df.loc[i] = [k, int(k[6:10]), item[0], item[1], item[2]]
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+        jahr       = int(k[6:10])
+        monatabs   = str(k[6:10]+k[3:5])
+        monat      = int(k[3:5])
+        #hausgesamt = float(int(item[0])/int(1000))
+        hausgesamt = int(item[0])
+        hausgesamt_anz= str(hausgesamt).replace('.','')
+        wr1        = int(item[1])
+        wr2        = int(item[2])
+        df.loc[i] = [k, jahr, monatabs, monat, hausgesamt, wr1,wr2]
+        datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
+        #if i==100: break
 
-    #print (df.tail(7))
-    df['year_sum'] = df.groupby(["Jahr"])["HausGesamt"].sum()
-    print (df.tail(7))
+    datafile.close()
+    df['HausGesamt'] = df['HausGesamt'].astype(float)
+    #print (df.dtypes)
 
-    #exit()
+    #df_year        = pd.DataFrame(columns=('Jahr', 'Gesamt'))
+    df_month       = pd.DataFrame(columns=('bla', 'HausGesamt'))
+    
+    df['haus_sum'] = df.groupby('Monatabs')['HausGesamt'].transform('sum')
+    df['haus_avg'] = df.groupby('Monatabs')['HausGesamt'].transform('mean')
+    df['month_avg'] = df.groupby('Monat')['HausGesamt'].transform('mean')
+    
+    
+    df_month['HausGesamt'] = df.groupby('Monatabs')['HausGesamt'].sum()
+    df_month.reset_index(inplace=True)
+    #df_month.set_index('Monatabs')
+    df_avg = df.loc[df.groupby("Monatabs")["haus_avg"].idxmax()]
+    print(df_month)
+    print (df_avg)
+    
+    # ax = plt.subplot(111)
+    # f = plt.figure(figsize = (20, 8))
+    # plt.style.use('seaborn-basdfright')
+    # #move_figure(f, 540, 0)
+    # plt.bar(df['Monatabs'], df['HausGesamt'], align='center', label='')
+    # #plt.bar(df_avg['Monatabs'], df['month_avg'], color='red')
 
-    f = plt.figure(figsize = (20, 8))
-    plt.style.use('dark_background')
-    #move_figure(f, 540, 0)
+    df_month = df_month.tail(11)
+    df_avg = df_avg.tail(11)
 
-    ''' letzten x Tage ausgeben '''
-    latest_x_days = df.tail(7)
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    ax.bar(df_month['Monatabs'], df_month['HausGesamt'], color='blue', label='Monatssumme')
+    ax2.plot(df_avg['Monatabs'], df_avg['month_avg'], color='green', label='Durchschnitt')
+    ax.set_xticklabels(df_month['Monatabs'])
+    ax.legend(loc='best')
 
-    ax = plt.subplot(111)
-
+    plt.show()
   
 
 def get_date():
     global path
     #read max date from shelve db
-    data = shelve.open(path)
-    for k, item in sorted(data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+    pv_data = shelve.open(path)
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
         last_date = k[0:10]
         break
 
@@ -78,7 +109,7 @@ def get_date():
         start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
         end_date = today
 
-    print (f'getting data for {start_date} - {end_date}')
+    print (f'getting values for {start_date} - {end_date}')
     return start_date, end_date
 
 def get_values_from_pv(start_date, end_date):
