@@ -37,13 +37,13 @@ def make_graph():
     
     df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'HausGesamt', 'WR1', 'WR2'))
     i=0
-    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=False):
         jahr       = int(k[6:10])
         monatabs   = str(k[6:10]+k[3:5])
         monat      = int(k[3:5])
         #hausgesamt = float(int(item[0])/int(1000))
-        hausgesamt = int(item[0])
-        hausgesamt_anz= str(hausgesamt).replace('.','')
+        hausgesamt = int(item[0]) / 1000
+        #hausgesamt_anz= str(hausgesamt).replace('.','')
         wr1        = int(item[1])
         wr2        = int(item[2])
         df.loc[i] = [k, jahr, monatabs, monat, hausgesamt, wr1,wr2]
@@ -52,43 +52,20 @@ def make_graph():
         #if i==100: break
 
     datafile.close()
-    df['HausGesamt'] = df['HausGesamt'].astype(float)
-    #print (df.dtypes)
-
-    #df_year        = pd.DataFrame(columns=('Jahr', 'Gesamt'))
-    #df_month_sum       = pd.DataFrame(columns=('bla', 'haus_month_sum_agg'))
+    df['HausGesamt'] = df['HausGesamt'].astype(float)  
+    df['haus_sum_monatabs']      = df.groupby('Monatabs')['HausGesamt'].transform('sum')
+    df['haus_sum_monat']         = df.groupby('Monat')['HausGesamt'].transform('sum')
+       
+    anz_jahre = df['Jahr'].nunique()-1
+    print ("AnzahlJahre", anz_jahre)
     
-    df['haus_sum']       = df.groupby('Monatabs')['HausGesamt'].transform('sum')
-
-    df_sum               = df.loc[df.groupby("Monatabs")["haus_sum"].idxmax()]
-    df_sum['haus_month_sum'] = df_sum.groupby('Monat')['haus_sum'].transform('sum')
-    df_sum['monat_count']    = df_sum.groupby('Monat')['Monat'].count()
-    print (df_sum)
-    exit()
-
-    df_month_avg                 = df_sum.loc[df_sum.groupby("Monat")["haus_month_sum"].idxmax()]
-    print (df_month_avg)
-    print (df_month_avg.count())
-    exit()
-
-    print (df_sum)
-    #print (df_month_sum)
-    exit()
-
-    df_sum['haus_month_avg'] = df_sum.groupby('Monat')['haus_month_sum'].agg([sum, 'mean'])
     
-    #df['haus_avg'] = df.groupby('Monatabs')['haus_sum'].transform('mean')
-    #df['month_avg'] = df.groupby('Monat')['haus_sum'].transform('mean')
-    
-    df_month['HausGesamt'] = df.groupby('Monatabs')['HausGesamt'].sum()
-    df_month['HausAvg']    = df_month.groupby('Monatabs')['HausGesamt'].transform('mean')
-    df_month.reset_index(inplace=True)
-    #df_month.set_index('Monatabs')
-    df_avg = df.loc[df.groupby("Monatabs")["haus_sum"].idxmax()]
-    print(df_month)
+    df_avg = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
+    df_avg['haus_avg_monat']     = df_avg['haus_sum_monat']/anz_jahre
+
+    print (df.tail(12))
     print (df_avg)
-    
-    exit()
+
     # ax = plt.subplot(111)
     # f = plt.figure(figsize = (20, 8))
     # plt.style.use('seaborn-basdfright')
@@ -96,15 +73,22 @@ def make_graph():
     # plt.bar(df['Monatabs'], df['HausGesamt'], align='center', label='')
     # #plt.bar(df_avg['Monatabs'], df['month_avg'], color='red')
 
-    df_month = df_month.tail(11)
-    df_avg = df_avg.tail(11)
-
+    #df = df.tail(12)
+    
+    df = df[(df.Jahr == 2020)]
+    print (df)
+    
     fig, ax = plt.subplots()
+    ax.bar(df['Monat'], df['haus_sum_monatabs'], color='blue', label='Monatssumme')
     ax2 = ax.twinx()
-    ax.bar(df_month['Monatabs'], df_month['HausGesamt'], color='blue', label='Monatssumme')
-    ax2.plot(df_avg['Monatabs'], df_avg['month_avg'], color='green', label='Durchschnitt')
-    ax.set_xticklabels(df_month['Monatabs'])
+    ax2.scatter(df_avg['Monat'], df_avg['haus_avg_monat'], color='green', label='Durchschnitt')
+    ax2.grid(None)
+    from matplotlib import rcParams
+    rcParams.update({'figure.autolayout': True})
+    ax2.set_yticks(np.linspace(ax2.get_yticks()[0],ax2.get_yticks()[-1],len(ax.get_yticks())))
+    #ax.set_xticklabels(df_avg['Monat'])
     ax.legend(loc='best')
+
 
     plt.show()
   
