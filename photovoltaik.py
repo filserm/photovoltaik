@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import pandas as pd
 import numpy as np
-
+from collections import Counter
 
 today = datetime.date.today()
 today = today.strftime("%d.%m.%Y")
@@ -56,20 +56,39 @@ def make_graph():
     #print (df.dtypes)
 
     #df_year        = pd.DataFrame(columns=('Jahr', 'Gesamt'))
-    df_month       = pd.DataFrame(columns=('bla', 'HausGesamt'))
+    #df_month_sum       = pd.DataFrame(columns=('bla', 'haus_month_sum_agg'))
     
-    df['haus_sum'] = df.groupby('Monatabs')['HausGesamt'].transform('sum')
-    df['haus_avg'] = df.groupby('Monatabs')['HausGesamt'].transform('mean')
-    df['month_avg'] = df.groupby('Monat')['HausGesamt'].transform('mean')
+    df['haus_sum']       = df.groupby('Monatabs')['HausGesamt'].transform('sum')
+
+    df_sum               = df.loc[df.groupby("Monatabs")["haus_sum"].idxmax()]
+    df_sum['haus_month_sum'] = df_sum.groupby('Monat')['haus_sum'].transform('sum')
+    df_sum['monat_count']    = df_sum.groupby('Monat')['Monat'].count()
+    print (df_sum)
+    exit()
+
+    df_month_avg                 = df_sum.loc[df_sum.groupby("Monat")["haus_month_sum"].idxmax()]
+    print (df_month_avg)
+    print (df_month_avg.count())
+    exit()
+
+    print (df_sum)
+    #print (df_month_sum)
+    exit()
+
+    df_sum['haus_month_avg'] = df_sum.groupby('Monat')['haus_month_sum'].agg([sum, 'mean'])
     
+    #df['haus_avg'] = df.groupby('Monatabs')['haus_sum'].transform('mean')
+    #df['month_avg'] = df.groupby('Monat')['haus_sum'].transform('mean')
     
     df_month['HausGesamt'] = df.groupby('Monatabs')['HausGesamt'].sum()
+    df_month['HausAvg']    = df_month.groupby('Monatabs')['HausGesamt'].transform('mean')
     df_month.reset_index(inplace=True)
     #df_month.set_index('Monatabs')
-    df_avg = df.loc[df.groupby("Monatabs")["haus_avg"].idxmax()]
+    df_avg = df.loc[df.groupby("Monatabs")["haus_sum"].idxmax()]
     print(df_month)
     print (df_avg)
     
+    exit()
     # ax = plt.subplot(111)
     # f = plt.figure(figsize = (20, 8))
     # plt.style.use('seaborn-basdfright')
