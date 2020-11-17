@@ -24,8 +24,8 @@ WR1_TEXT = 'SG45T2.1.20'
 WR2_TEXT = 'SGl10k.1.10'
 
 def main():
-    start_date, end_date = get_date()
-    get_values_from_pv(start_date, end_date)
+    #start_date, end_date = get_date()
+    #get_values_from_pv(start_date, end_date)
     make_graph()
     upload_plot()
 
@@ -75,16 +75,17 @@ def make_graph():
     #exit()
     df['haus_sum_monatabs']      = df.groupby('Monatabs')['HausGesamt'].transform('sum')
     df['haus_sum_monat']         = df.groupby('Monat')['HausGesamt'].transform('sum')
-       
-    anz_jahre = df['Jahr'].nunique()-1
-    print ("AnzahlJahre", anz_jahre)
     
+    df_avg = df.loc[df.groupby("Monatabs")["haus_sum_monatabs"].idxmax()]
+    df_avg1 = df_avg[df_avg['haus_sum_monatabs'] != 0]
+    df_avg2 = df_avg1[df_avg1['Jahr'] != int(current_year)]
+    df_mean = df_avg2.groupby("Monat").agg({"haus_sum_monatabs" : np.mean}).reset_index()
     
-    df_avg = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
-    df_avg['haus_avg_monat']     = df_avg['haus_sum_monat']/anz_jahre
-    df_avg['haus_max_monat']     = df_avg['haus_sum_monatabs']
+    df_max = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
+    df_max['haus_max_monat']     = df_avg['haus_sum_monatabs']
 
-    df1 = df[df['haus_sum_monatabs'] != 0]
+    df0 = df[df['haus_sum_monatabs'] != 0]
+    df1 = df0[df0['Jahr'] != int(current_year)]
     df_min = df1.loc[df1.groupby("Monat")["haus_sum_monatabs"].idxmin()]
     df_min['haus_min_monat']     = df_min['haus_sum_monatabs']
     
@@ -96,37 +97,46 @@ def make_graph():
     #df.set_index('Datum').reindex(r).fillna(0.0).rename_axis('Datum').reset_index()
 
     print ("Max_value", max_value)
-    print (df)
-    print (df_avg)
+    print (df_max)
+    print (df_mean)
+    print (df_min)
 
-    plt.style.use('bmh') 
-    fig, ax = plt.subplots()
+    #plt.style.use('seaborn-whitegrid') 
+    backgroundcolor = '#121212'
+    fig, ax = plt.subplots(figsize=(20, 10), facecolor=backgroundcolor)
+    ax.set_facecolor('#eafff5')
+    #fig.patch.set_alpha(0.5)
     #fig.figure(figsize=(20,10)) 
     
-    ax.set_title('PV Anlage - Ertrag in kWh', fontdict={'fontsize': 14, 'fontweight': 'medium'})
+    ax.set_title('PV Anlage - Ertrag in kWh', fontdict={'fontsize': 24, 'fontweight': 'medium', 'color': 'white'})
 
-    ax.plot(df_avg['Monat'], df_avg['haus_avg_monat'], label='Durchschnittswerte', zorder=2)
-    ax.scatter(df_avg['Monat'], df_avg['haus_max_monat'], label='Max Werte', s=100, zorder = 3)
-    ax.scatter(df_min['Monat'], df_min['haus_min_monat'], label='Min Werte', s=50, zorder = 3)
+    ax.plot(df_mean['Monat'], df_mean['haus_sum_monatabs'], '_', mew=3, ms=68, color='orange', label='Durchschnittswerte', zorder=2)
+    ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=68, color='green', label='Max Werte', zorder = 3)
+    ax.plot(df_min['Monat'], df_min['haus_min_monat'],      '_', mew=3, ms=68, color='red' ,   label='Min Werte', zorder = 3)
     ax2 = ax.twinx()
-    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', zorder=1)
+    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', color='xkcd:azure', zorder=1)
     ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
     ax.set_xticklabels(['Jan', 'Feb', 'Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'])
+    #ax.set_yticklabels(rotation=0, fontsize=18)
     ax.set_ylim(0, max_value + 500)
     ax2.set_ylim(0, max_value + 500)
-    ax.set_xlabel('Monat')
-    ax.set_ylabel('kWh')
+
+    ax.set_ylabel('kWh', color='peachpuff', fontsize=24)
+    ax.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
+    ax2.tick_params(labelcolor=backgroundcolor)
+    ax.spines['bottom'].set_color('w')
+    ax.spines['top'].set_color('w')
+    ax.spines['left'].set_color('w')
+    ax.spines['right'].set_color('w')
     ax.set_zorder(ax2.get_zorder()+1)
     ax.patch.set_visible(False)
-    ax2.grid(True)
-    plt.rcParams['font.size'] = 20
-    #plt.rcParams['legend.fontsize'] = 12
-    
-    #ax.legend(loc='best')
+    ax2.grid(True, linestyle='-.')   
+    ax.legend(loc="upper left",markerscale=0.2)
 
-    #plt.show()
+    plt.show()
     
     fig.savefig(f'{plot_filename}', dpi = (600))
+    #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
   
 
 def get_date():
