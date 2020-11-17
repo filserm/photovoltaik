@@ -10,10 +10,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import pandas as pd
 import numpy as np
-from collections import Counter
+import calendar
 
 today = datetime.date.today()
 today = today.strftime("%d.%m.%Y")
+current_year = today[6:10]
+plot_filename = f'pv{current_year}.png'
 
 MAX_DAYS = 14
 url = 'http://192.168.178.58/cgi-bin/download.csv/'
@@ -22,13 +24,21 @@ WR1_TEXT = 'SG45T2.1.20'
 WR2_TEXT = 'SGl10k.1.10'
 
 def main():
-    #start_date, end_date = get_date()
-    #get_values_from_pv(start_date, end_date)
+    start_date, end_date = get_date()
+    get_values_from_pv(start_date, end_date)
     make_graph()
+    upload_plot()
 
+def upload_plot():
+    global plot_filename
+    gs_folder = "darkshadow-share/"
+    cmd1 = f'gsutil cp {plot_filename} gs://{gs_folder}'
+    cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{plot_filename}'
+    os.system(cmd1)
+    os.system(cmd2)
 
 def make_graph():
-    global path, WR1_TEXT, WR2_TEXT
+    global path, WR1_TEXT, WR2_TEXT, current_year, plot_filename
 
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
@@ -36,8 +46,9 @@ def make_graph():
     datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\n')
     
     df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'HausGesamt', 'WR1', 'WR2'))
+    #idx = pd.date_range('01-01-2011', '12-31-2020')
     i=0
-    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=False):
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
         jahr       = int(k[6:10])
         monatabs   = str(k[6:10]+k[3:5])
         monat      = int(k[3:5])
@@ -53,6 +64,15 @@ def make_graph():
 
     datafile.close()
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
+    df['Datum']      = pd.to_datetime(df['Datum'])
+
+    #print (df.tail(30))
+    #df.index = pd.DatetimeIndex(df.Datum)
+    
+    #idx = pd.date_range('2011-01-01', '2020-31-12')
+    #df.reindex(idx, fill_value=0)
+    #print (df.head(60))
+    #exit()
     df['haus_sum_monatabs']      = df.groupby('Monatabs')['HausGesamt'].transform('sum')
     df['haus_sum_monat']         = df.groupby('Monat')['HausGesamt'].transform('sum')
        
@@ -62,35 +82,51 @@ def make_graph():
     
     df_avg = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
     df_avg['haus_avg_monat']     = df_avg['haus_sum_monat']/anz_jahre
+    df_avg['haus_max_monat']     = df_avg['haus_sum_monatabs']
 
-    print (df.tail(12))
+    df1 = df[df['haus_sum_monatabs'] != 0]
+    df_min = df1.loc[df1.groupby("Monat")["haus_sum_monatabs"].idxmin()]
+    df_min['haus_min_monat']     = df_min['haus_sum_monatabs']
+    
+   
+    df = df[(df.Jahr == int(current_year))]
+    max_value = df['haus_sum_monatabs'].max()
+    
+    #r = pd.date_range(start=df.Datum.min(), end='2020-12-31')
+    #df.set_index('Datum').reindex(r).fillna(0.0).rename_axis('Datum').reset_index()
+
+    print ("Max_value", max_value)
+    print (df)
     print (df_avg)
 
-    # ax = plt.subplot(111)
-    # f = plt.figure(figsize = (20, 8))
-    # plt.style.use('seaborn-basdfright')
-    # #move_figure(f, 540, 0)
-    # plt.bar(df['Monatabs'], df['HausGesamt'], align='center', label='')
-    # #plt.bar(df_avg['Monatabs'], df['month_avg'], color='red')
-
-    #df = df.tail(12)
-    
-    df = df[(df.Jahr == 2020)]
-    print (df)
-    
+    plt.style.use('bmh') 
     fig, ax = plt.subplots()
-    ax.bar(df['Monat'], df['haus_sum_monatabs'], color='blue', label='Monatssumme')
+    #fig.figure(figsize=(20,10)) 
+    
+    ax.set_title('PV Anlage - Ertrag in kWh', fontdict={'fontsize': 14, 'fontweight': 'medium'})
+
+    ax.plot(df_avg['Monat'], df_avg['haus_avg_monat'], label='Durchschnittswerte', zorder=2)
+    ax.scatter(df_avg['Monat'], df_avg['haus_max_monat'], label='Max Werte', s=100, zorder = 3)
+    ax.scatter(df_min['Monat'], df_min['haus_min_monat'], label='Min Werte', s=50, zorder = 3)
     ax2 = ax.twinx()
-    ax2.scatter(df_avg['Monat'], df_avg['haus_avg_monat'], color='green', label='Durchschnitt')
-    ax2.grid(None)
-    from matplotlib import rcParams
-    rcParams.update({'figure.autolayout': True})
-    ax2.set_yticks(np.linspace(ax2.get_yticks()[0],ax2.get_yticks()[-1],len(ax.get_yticks())))
-    #ax.set_xticklabels(df_avg['Monat'])
-    ax.legend(loc='best')
+    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', zorder=1)
+    ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
+    ax.set_xticklabels(['Jan', 'Feb', 'Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'])
+    ax.set_ylim(0, max_value + 500)
+    ax2.set_ylim(0, max_value + 500)
+    ax.set_xlabel('Monat')
+    ax.set_ylabel('kWh')
+    ax.set_zorder(ax2.get_zorder()+1)
+    ax.patch.set_visible(False)
+    ax2.grid(True)
+    plt.rcParams['font.size'] = 20
+    #plt.rcParams['legend.fontsize'] = 12
+    
+    #ax.legend(loc='best')
 
-
-    plt.show()
+    #plt.show()
+    
+    fig.savefig(f'{plot_filename}', dpi = (600))
   
 
 def get_date():
