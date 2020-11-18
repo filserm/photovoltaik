@@ -12,22 +12,80 @@ import pandas as pd
 import numpy as np
 import calendar
 
-today = datetime.date.today()
-today = today.strftime("%d.%m.%Y")
-current_year = today[6:10]
-plot_filename = f'pv{current_year}.png'
+today     = datetime.date.today()
+today     = today.strftime("%d.%m.%Y")
+yesterday = datetime.date.today() - datetime.timedelta(days=1)
+yesterday = yesterday.strftime("%d.%m.%Y")
 
-MAX_DAYS = 14
-url = 'http://192.168.178.58/cgi-bin/download.csv/'
-path = os.path.join(os.path.expanduser("~/photovoltaik/"), 'pv_daten') #path to db
-WR1_TEXT = 'SG45T2.1.20'
-WR2_TEXT = 'SGl10k.1.10'
+current_year = today[6:10]
+
+if sys.platform == "linux" or sys.platform == "linux2":
+    dir = '~/photovoltaik/'
+elif sys.platform == "win32":
+    dir = 'C:/PV'
+ 
+anlagen = {
+
+            #'mike' : ['http://192.168.178.58/cgi-bin/download.csv/',
+            #          'mike_pv_'  ,
+            #          'mike_raw_data.db' 
+            #         ] ,
+
+            'done' : ['http://192.168.178.57/cgi-bin/download.csv/',
+                      'done_pv_'  ,
+                      'done_raw_data.db'  
+                     ] 
+}
+
+# print (f'Path = {path}')
+
+
+
+
+#plot_filename = f'pv{current_year}.png'
+
+
+MAX_DAYS = 3400
+#url = 'http://192.168.178.58/cgi-bin/download.csv/'
+#path = os.path.join(os.path.expanduser("~/photovoltaik/"), 'pv_daten') #path to db
+#WR1_TEXT = 'SG45T2.1.20'
+#WR2_TEXT = 'SGl10k.1.10'
 
 def main():
-    #start_date, end_date = get_date()
-    #get_values_from_pv(start_date, end_date)
-    make_graph()
-    upload_plot()
+    # fuer jede Anlage einen Durchlauf
+    for key, value in anlagen.items():
+        url = value[0]
+        plot_filename = value[1]
+        db = value[2]
+        path = os.path.join(os.path.expanduser(dir), db) 
+                
+        #start_date, end_date = get_date(url, path)
+        #get_values_from_pv(start_date, end_date, url, path)
+        make_graph(current_year, path, plot_filename)
+        
+        #upload_plot()
+
+def get_date(url, path):
+    #read max date from shelve db
+    pv_data = shelve.open(path)
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+        last_date = k[0:10]
+        break
+
+    try:
+        print (f'last date value already in database - {last_date}')
+        start_date = datetime.datetime.strptime(last_date, '%d.%m.%Y') + datetime.timedelta(days=1)
+        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
+        if start_date > yesterday: start_date = yesterday
+        end_date = yesterday
+    except:
+        print (f'database has no values yet')
+        start_date = datetime.datetime.strptime(yesterday, '%d.%m.%Y') - datetime.timedelta(days=MAX_DAYS)
+        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
+        end_date = yesterday
+
+    print (f'getting values for {start_date} - {end_date}')
+    return start_date, end_date
 
 def upload_plot():
     global plot_filename
@@ -37,9 +95,7 @@ def upload_plot():
     os.system(cmd1)
     os.system(cmd2)
 
-def make_graph():
-    global path, WR1_TEXT, WR2_TEXT, current_year, plot_filename
-
+def make_graph(year, path, plot_filename):
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
     datafile = open(filename, 'w')
@@ -118,8 +174,8 @@ def make_graph():
     ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
     ax.set_xticklabels(['Jan', 'Feb', 'Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'])
     #ax.set_yticklabels(rotation=0, fontsize=18)
-    ax.set_ylim(0, max_value + 500)
-    ax2.set_ylim(0, max_value + 500)
+    ax.set_ylim(0, max_value + 600)
+    ax2.set_ylim(0, max_value + 600)
 
     ax.set_ylabel('kWh', color='peachpuff', fontsize=24)
     ax.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
@@ -138,32 +194,7 @@ def make_graph():
     fig.savefig(f'{plot_filename}', dpi = (600))
     #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
   
-
-def get_date():
-    global path
-    #read max date from shelve db
-    pv_data = shelve.open(path)
-    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
-        last_date = k[0:10]
-        break
-
-    try:
-        print (f'last date value already in database - {last_date}')
-        start_date = datetime.datetime.strptime(last_date, '%d.%m.%Y') + datetime.timedelta(days=1)
-        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
-        end_date = today
-    except:
-        print (f'database has no values yet')
-        start_date = datetime.datetime.strptime(today, '%d.%m.%Y') - datetime.timedelta(days=MAX_DAYS)
-        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
-        end_date = today
-
-    print (f'getting values for {start_date} - {end_date}')
-    return start_date, end_date
-
-def get_values_from_pv(start_date, end_date):
-    global url, headers, data, path
-
+def get_values_from_pv(start_date, end_date, url, path):
     headers={}
 
     data = {
@@ -186,7 +217,7 @@ def get_values_from_pv(start_date, end_date):
     values = {}
     for item in kwh_data:
         line_item = item.split(';')
-        if len(line_item) == 4:
+        if 4 <= len(line_item) <=6 :
             datum      = line_item[0]
             wr_gesamt  = line_item[1]
             wr1        = line_item[2]
@@ -200,7 +231,6 @@ def get_values_from_pv(start_date, end_date):
         for k, v in values.items():
             db[k]= v
             print (f'Datum {k} - Werte {v}')
-
 
 
 main()
