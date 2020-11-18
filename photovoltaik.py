@@ -25,7 +25,6 @@ if sys.platform == "linux" or sys.platform == "linux2":
 elif sys.platform == "win32":
     dir = 'C:/PV'
 
-
 anlagen = {
 
             # 'mike' : ['http://192.168.178.58/cgi-bin/download.csv/',
@@ -33,11 +32,27 @@ anlagen = {
             #           'mike_raw_data.db' 
             #          ] ,
 
-            'halle' : ['http://192.168.178.57/cgi-bin/download.csv/',
-                      'halle_pv_'  ,
-                      'halle_raw_data.db'  
-                     ] 
+            'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
+                        'plotname'         : 'mike_pv_'  ,
+                        'db'               : 'mike_raw_data.db'  ,
+                        'colors'           : {
+                                                'background-color': '#121212', 
+                                                'bar-color'       : 'azure',
+                                                'text-color'      : 'ivory'
+                                             }
+            },
+
+            'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
+                        'plotname'         : 'halle_pv_'  ,
+                        'db'               : 'halle_raw_data.db'  ,
+                        'colors'           : {
+                                                'background-color': '#121212', 
+                                                'bar-color'       : 'aqua',
+                                                'text-color'      : 'ivory'
+                                             }
+            }
 }
+
 
 
 MAX_DAYS = 14
@@ -45,14 +60,15 @@ MAX_DAYS = 14
 def main():
     # fuer jede Anlage einen Durchlauf
     for key, value in anlagen.items():
-        url           = value[0]
-        plot_filename = value[1]+current_year+'.png'
-        db            = value[2]
-        path          = os.path.join(os.path.expanduser(dir), db) 
+        url             = value['url']
+        plot_filename   = value['plotname'] + current_year + '.png'
+        db              = value['db']
+        colors          = value['colors']
+        path            = os.path.join(os.path.expanduser(dir), db) 
                 
         #start_date, end_date = get_date(url, path)
         #get_values_from_pv(start_date, end_date, url, path)
-        make_graph(current_year, path, plot_filename)
+        make_graph(current_year, path, plot_filename, colors)
         
         upload_plot(plot_filename)
 
@@ -78,7 +94,7 @@ def get_date(url, path):
     print (f'getting values for {start_date} - {end_date}')
     return start_date, end_date
 
-def make_graph(year, path, plot_filename):
+def make_graph(year, path, plot_filename, colors):
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
     datafile = open(filename, 'w')
@@ -139,20 +155,19 @@ def make_graph(year, path, plot_filename):
     #print (df_min)
 
     #plt.style.use('seaborn-whitegrid') 
-    backgroundcolor = '#121212'
-    fig, ax = plt.subplots(figsize=(20, 10), facecolor=backgroundcolor)
+    fig, ax = plt.subplots(figsize=(20, 10), facecolor=colors['background-color'])
     ax.set_facecolor('#eafff5')
     #fig.patch.set_alpha(0.5)
     #fig.figure(figsize=(20,10)) 
     
     name = plot_filename.split('_')
-    ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':'ivory'})
+    ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
 
     ax.plot(df_mean['Monat'], df_mean['haus_sum_monatabs'], '_', mew=3, ms=68, color='orange', label='Durchschnittswerte', zorder=2)
     ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=68, color='green', label='Max Werte', zorder = 3)
     ax.plot(df_min['Monat'], df_min['haus_min_monat'],      '_', mew=3, ms=68, color='red' ,   label='Min Werte', zorder = 3)
     ax2 = ax.twinx()
-    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', color='xkcd:azure', zorder=1)
+    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', color=f'xkcd:{colors["bar-color"]}', zorder=1)
     ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
     ax.set_xticklabels(['Jan', 'Feb', 'Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'])
     #ax.set_yticklabels(rotation=0, fontsize=18)
@@ -160,13 +175,13 @@ def make_graph(year, path, plot_filename):
     ax.set_ylim(0, max_value + 500)
     ax2.set_ylim(0, max_value + 500)
 
-    ax.set_ylabel('kWh', color='ivory', fontsize=24)
+    ax.set_ylabel('kWh', color=colors['text-color'], fontsize=24)
     ax.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
-    ax2.tick_params(labelcolor=backgroundcolor)
-    ax.spines['bottom'].set_color('ivory')
-    ax.spines['top'].set_color('ivory')
-    ax.spines['left'].set_color('ivory')
-    ax.spines['right'].set_color('ivory')
+    ax2.tick_params(labelcolor=colors['background-color'])
+    ax.spines['bottom'].set_color(colors['text-color'])
+    ax.spines['top'].set_color(colors['text-color'])
+    ax.spines['left'].set_color(colors['text-color'])
+    ax.spines['right'].set_color(colors['text-color'])
     ax.set_zorder(ax2.get_zorder()+1)
     ax.patch.set_visible(False)
     ax.legend(loc="upper left",markerscale=0.2)
@@ -187,11 +202,11 @@ def make_graph(year, path, plot_filename):
 
     #ax.grid(which='minor', alpha=0., color='#CCCCCC', linestyle='-.')
     #ax.grid(which='major', color='#CCCCCC', linestyle='-')
-    ax.grid(True, linestyle='-.', color='ivory')   
+    ax.grid(True, linestyle='-.', color=colors['text-color'])   
     ax.xaxis.grid(False)
 
     for p in ax2.patches:
-        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color='ivory' ,fontsize=14)
+        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
     
     plt.show()
     
