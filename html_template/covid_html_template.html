@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <!-- <link href='http://fonts.googleapis.com/css?family=Oswald:400,300,700' rel='stylesheet' type='text/css'> -->
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+<style> 
+img.arrow {
+  width: 32px;
+  height: 17px;
+}
+
+img.plot {
+  width: 100%;
+  height: auto;
+}
+
+img.logo {
+  width: 100px;
+  height: 100px;
+}
+
+td {
+  vertical-align: middle !important;
+  font-weight: bold !important;
+}
+
+td:nth-child(5) {
+  width: 12px;
+  text-align: right !important;
+  font-weight: bold;
+ }
+ td:nth-child(4) {
+  width: 12px;
+  align-content: center !important;
+   }
+td:nth-child(3) {
+  width: 16px;
+  align-content: center !important;
+  text-align:center !important;
+}
+/* 
+body {
+  background-color: #343a40;
+  font-family: 'Oswald', sans-serif !important; 
+  font-family: 'Roboto', sans-serif;
+  font-size: 20px;
+} */
+
+
+</style>
+
+<title>Covid</title>
+</head>
+<body>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    
+  <table class="table table-dark">
+  
+<thead>
+    <tr>
+        <tr><td colspan = 5 style="text-align:center"><img src="https://storage.googleapis.com/darkshadow-share/corona1.png" class="logo"></td>    
+    </tr>
+
+    <tr>
+      <th scope="col" style="vertical-align: middle">#</th>
+      <th scope="col" style="vertical-align: middle">Stadt/Landkreis</th>
+      <th scope="col" style="vertical-align: middle">7 Tage Inzidenz pro 100k Einwohner</th>
+      <th colspan = 2 scope="col" style="vertical-align: middle">Diff gg Vortag</th> 
+    </tr>
+  </thead>
+  <tbody>
+      ##COVID_DATA##
+      ##LAST_UPDATE##
+      <tr><td colspan = 5><img src="https://storage.googleapis.com/darkshadow-share/plot.png" class="plot"></td></tr>
+  </tbody>
+</table>
+  
+</body>
+</html>

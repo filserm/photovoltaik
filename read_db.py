@@ -2,7 +2,7 @@ import shelve
 import os
 from datetime import datetime as dt, timedelta
 
-path = os.path.join(os.path.expanduser("~/photovoltaik/"), 'pv_daten')
+path = os.path.join(os.path.expanduser("~/photovoltaik/"), 'done_raw_data.db')
 data = shelve.open(path)
 
 for k, item in sorted(data.items(), key=lambda x: (dt.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):

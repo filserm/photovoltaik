@@ -12,73 +12,34 @@ import pandas as pd
 import numpy as np
 import calendar
 
-today     = datetime.date.today()
-today     = today.strftime("%d.%m.%Y")
-yesterday = datetime.date.today() - datetime.timedelta(days=1)
-yesterday = yesterday.strftime("%d.%m.%Y")
-
+today = datetime.date.today()
+today = today.strftime("%d.%m.%Y")
 current_year = today[6:10]
-gs_folder = "darkshadow-share/"
-
-if sys.platform == "linux" or sys.platform == "linux2":
-    dir = '~/photovoltaik/'
-elif sys.platform == "win32":
-    dir = 'C:/PV'
-
-
-anlagen = {
-
-            # 'mike' : ['http://192.168.178.58/cgi-bin/download.csv/',
-            #           'mike_pv_'  ,
-            #           'mike_raw_data.db' 
-            #          ] ,
-
-            'halle' : ['http://192.168.178.57/cgi-bin/download.csv/',
-                      'halle_pv_'  ,
-                      'halle_raw_data.db'  
-                     ] 
-}
-
+plot_filename = f'pv{current_year}.png'
 
 MAX_DAYS = 14
+url = 'http://192.168.178.58/cgi-bin/download.csv/'
+path = os.path.join(os.path.expanduser("~/photovoltaik/"), 'pv_daten') #path to db
+WR1_TEXT = 'SG45T2.1.20'
+WR2_TEXT = 'SGl10k.1.10'
 
 def main():
-    # fuer jede Anlage einen Durchlauf
-    for key, value in anlagen.items():
-        url           = value[0]
-        plot_filename = value[1]+current_year+'.png'
-        db            = value[2]
-        path          = os.path.join(os.path.expanduser(dir), db) 
-                
-        #start_date, end_date = get_date(url, path)
-        #get_values_from_pv(start_date, end_date, url, path)
-        make_graph(current_year, path, plot_filename)
-        
-        upload_plot(plot_filename)
+    #start_date, end_date = get_date()
+    #get_values_from_pv(start_date, end_date)
+    make_graph()
+    upload_plot()
 
-def get_date(url, path):
-    #read max date from shelve db
-    pv_data = shelve.open(path)
-    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
-        last_date = k[0:10]
-        break
+def upload_plot():
+    global plot_filename
+    gs_folder = "darkshadow-share/"
+    cmd1 = f'gsutil cp {plot_filename} gs://{gs_folder}'
+    cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{plot_filename}'
+    os.system(cmd1)
+    os.system(cmd2)
 
-    try:
-        print (f'last date value already in database - {last_date}')
-        start_date = datetime.datetime.strptime(last_date, '%d.%m.%Y') + datetime.timedelta(days=1)
-        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
-        if start_date > yesterday: start_date = yesterday
-        end_date = yesterday
-    except:
-        print (f'database has no values yet')
-        start_date = datetime.datetime.strptime(yesterday, '%d.%m.%Y') - datetime.timedelta(days=MAX_DAYS)
-        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
-        end_date = yesterday
+def make_graph():
+    global path, WR1_TEXT, WR2_TEXT, current_year, plot_filename
 
-    print (f'getting values for {start_date} - {end_date}')
-    return start_date, end_date
-
-def make_graph(year, path, plot_filename):
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
     datafile = open(filename, 'w')
@@ -130,13 +91,15 @@ def make_graph(year, path, plot_filename):
     
    
     df = df[(df.Jahr == int(current_year))]
-    max_value = df_max['haus_sum_monatabs'].max()
-    df_kum = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
-    print (df_kum)
+    max_value = df['haus_sum_monatabs'].max()
+    
+    #r = pd.date_range(start=df.Datum.min(), end='2020-12-31')
+    #df.set_index('Datum').reindex(r).fillna(0.0).rename_axis('Datum').reset_index()
+
     print ("Max_value", max_value)
-    #print (df_max)
-    #print (df_mean)
-    #print (df_min)
+    print (df_max)
+    print (df_mean)
+    print (df_min)
 
     #plt.style.use('seaborn-whitegrid') 
     backgroundcolor = '#121212'
@@ -145,8 +108,7 @@ def make_graph(year, path, plot_filename):
     #fig.patch.set_alpha(0.5)
     #fig.figure(figsize=(20,10)) 
     
-    name = plot_filename.split('_')
-    ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':'ivory'})
+    ax.set_title('PV Anlage - Ertrag in kWh', fontdict={'fontsize': 24, 'fontweight': 'medium', 'color': 'white'})
 
     ax.plot(df_mean['Monat'], df_mean['haus_sum_monatabs'], '_', mew=3, ms=68, color='orange', label='Durchschnittswerte', zorder=2)
     ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=68, color='green', label='Max Werte', zorder = 3)
@@ -156,49 +118,52 @@ def make_graph(year, path, plot_filename):
     ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
     ax.set_xticklabels(['Jan', 'Feb', 'Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'])
     #ax.set_yticklabels(rotation=0, fontsize=18)
-    
     ax.set_ylim(0, max_value + 500)
     ax2.set_ylim(0, max_value + 500)
 
-    ax.set_ylabel('kWh', color='ivory', fontsize=24)
+    ax.set_ylabel('kWh', color='peachpuff', fontsize=24)
     ax.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
     ax2.tick_params(labelcolor=backgroundcolor)
-    ax.spines['bottom'].set_color('ivory')
-    ax.spines['top'].set_color('ivory')
-    ax.spines['left'].set_color('ivory')
-    ax.spines['right'].set_color('ivory')
+    ax.spines['bottom'].set_color('w')
+    ax.spines['top'].set_color('w')
+    ax.spines['left'].set_color('w')
+    ax.spines['right'].set_color('w')
     ax.set_zorder(ax2.get_zorder()+1)
     ax.patch.set_visible(False)
+    ax2.grid(True, linestyle='-.')   
     ax.legend(loc="upper left",markerscale=0.2)
 
-    yticks = []
-    #df_kum.astype(int)
-    df_kum['haus_sum_monatabs'] = df_kum['haus_sum_monatabs'].astype(int) 
-    #for ytick in sorted(df_kum['haus_sum_monatabs']):
-    #    yticks.append(ytick)
-    
-    #ax2.set_yticks(yticks, minor=True)
-    #yt = ax2.get_yticks()
-    #yt = np.append(yt,yticks)
-
-    #print (minor_ticks)
-    #ax.set_yticks(yticks)
-    #ax.set_yticklabels(yticks)
-
-    #ax.grid(which='minor', alpha=0., color='#CCCCCC', linestyle='-.')
-    #ax.grid(which='major', color='#CCCCCC', linestyle='-')
-    ax.grid(True, linestyle='-.', color='ivory')   
-    ax.xaxis.grid(False)
-
-    for p in ax2.patches:
-        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color='ivory' ,fontsize=14)
-    
     plt.show()
     
-    fig.savefig(f'{plot_filename}', dpi=400)
+    fig.savefig(f'{plot_filename}', dpi = (600))
     #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
   
-def get_values_from_pv(start_date, end_date, url, path):
+
+def get_date():
+    global path
+    #read max date from shelve db
+    pv_data = shelve.open(path)
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+        last_date = k[0:10]
+        break
+
+    try:
+        print (f'last date value already in database - {last_date}')
+        start_date = datetime.datetime.strptime(last_date, '%d.%m.%Y') + datetime.timedelta(days=1)
+        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
+        end_date = today
+    except:
+        print (f'database has no values yet')
+        start_date = datetime.datetime.strptime(today, '%d.%m.%Y') - datetime.timedelta(days=MAX_DAYS)
+        start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
+        end_date = today
+
+    print (f'getting values for {start_date} - {end_date}')
+    return start_date, end_date
+
+def get_values_from_pv(start_date, end_date):
+    global url, headers, data, path
+
     headers={}
 
     data = {
@@ -221,7 +186,7 @@ def get_values_from_pv(start_date, end_date, url, path):
     values = {}
     for item in kwh_data:
         line_item = item.split(';')
-        if 4 <= len(line_item) <=6 :
+        if len(line_item) == 4:
             datum      = line_item[0]
             wr_gesamt  = line_item[1]
             wr1        = line_item[2]
@@ -237,12 +202,6 @@ def get_values_from_pv(start_date, end_date, url, path):
             print (f'Datum {k} - Werte {v}')
 
 
-def upload_plot(plot_filename):
-    global gs_folder
-    cmd1 = f'gsutil cp {plot_filename} gs://{gs_folder}'
-    cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{plot_filename}'
-    os.system(cmd1)
-    os.system(cmd2)
 
 main()
 
