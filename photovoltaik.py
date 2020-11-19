@@ -18,6 +18,18 @@ yesterday = datetime.date.today() - datetime.timedelta(days=1)
 yesterday = yesterday.strftime("%d.%m.%Y")
 
 current_year = today[6:10]
+
+#historische Datenaufbereitung
+years=[]
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'history':
+        for year in range(2011, int(current_year)+1):
+            years.append(year)
+else:
+    years.append(int(current_year))
+
+years=[2019,2020]
+
 gs_folder = "darkshadow-share/"
 
 if sys.platform == "linux" or sys.platform == "linux2":
@@ -26,22 +38,16 @@ elif sys.platform == "win32":
     dir = 'C:/PV'
 
 anlagen = {
-
-            # 'mike' : ['http://192.168.178.58/cgi-bin/download.csv/',
-            #           'mike_pv_'  ,
-            #           'mike_raw_data.db' 
-            #          ] ,
-
-            'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
-                        'plotname'         : 'mike_pv_'  ,
-                        'db'               : 'mike_raw_data.db'  ,
-                        'colors'           : {
-                                                'background-color': '#121212', 
-                                                'bar-color'       : 'azure',
-                                                'text-color'      : 'ivory'
-                                             }
-            },
-
+            # 'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
+            #             'plotname'         : 'mike_pv_'  ,
+            #             'db'               : 'mike_raw_data.db'  ,
+            #             'colors'           : {
+            #                                     'background-color': '#121212', 
+            #                                     'bar-color'       : 'azure',
+            #                                     'text-color'      : 'ivory'
+            #                                  }
+            # }
+            # ,
             'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
                         'plotname'         : 'halle_pv_'  ,
                         'db'               : 'halle_raw_data.db'  ,
@@ -57,20 +63,48 @@ anlagen = {
 
 MAX_DAYS = 14
 
-def main():
-    # fuer jede Anlage einen Durchlauf
-    for key, value in anlagen.items():
-        url             = value['url']
-        plot_filename   = value['plotname'] + current_year + '.png'
-        db              = value['db']
-        colors          = value['colors']
-        path            = os.path.join(os.path.expanduser(dir), db) 
-                
-        #start_date, end_date = get_date(url, path)
-        #get_values_from_pv(start_date, end_date, url, path)
-        make_graph(current_year, path, plot_filename, colors)
-        
-        upload_plot(plot_filename)
+def main(years):
+    for year in years:
+        # fuer jede Anlage einen Durchlauf
+        for key, value in anlagen.items():
+            url             = value['url']
+            plot_filename   = value['plotname'] + str(year) + '.png'
+            db              = value['db']
+            colors          = value['colors']
+            path            = os.path.join(os.path.expanduser(dir), db) 
+                    
+            #start_date, end_date = get_date(url, path)
+            #get_values_from_pv(start_date, end_date, url, path)
+            make_graph(year, path, plot_filename, colors)
+            upload_plot(plot_filename)
+    html(value['plotname'])
+
+def html(plotname):
+    global years
+    add_line=[]
+    i = 1
+    html_template = os.path.join(os.path.expanduser(dir+"/html_template"), 'photovoltaik_html_template.html')
+    html_template_file = open(html_template, 'r')
+    html_code = html_template_file.readlines()
+
+    global html_out_filename, html_filename
+    html_out_filename = f'{plotname[:-1]}.html'
+    html_filename = os.path.join(os.path.expanduser(dir+"/html_output"), html_out_filename)
+    htmlfile = open (html_filename, 'w')
+
+    for item in html_code:
+        if item.find('##PV_DATA##') > 0:
+            print (item)
+            while years:
+                year = years.pop()
+                print (year)
+                item = f'<tr><td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotname}{year}.png" class="plot"></td></tr>\n'
+                if len(years)>0: 
+                    htmlfile.write(item)
+                else:
+                    pass
+        htmlfile.write(item)
+    htmlfile.close()
 
 def get_date(url, path):
     #read max date from shelve db
@@ -145,10 +179,9 @@ def make_graph(year, path, plot_filename, colors):
     df_min['haus_min_monat']     = df_min['haus_sum_monatabs']
     
    
-    df = df[(df.Jahr == int(current_year))]
+    df = df[(df.Jahr == int(year))]
     max_value = df_max['haus_sum_monatabs'].max()
-    df_kum = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
-    print (df_kum)
+    kum_value = df['HausGesamt'].sum().astype(int) 
     print ("Max_value", max_value)
     #print (df_max)
     #print (df_mean)
@@ -185,30 +218,23 @@ def make_graph(year, path, plot_filename, colors):
     ax.set_zorder(ax2.get_zorder()+1)
     ax.patch.set_visible(False)
     ax.legend(loc="upper left",markerscale=0.2)
-
-    yticks = []
-    #df_kum.astype(int)
-    df_kum['haus_sum_monatabs'] = df_kum['haus_sum_monatabs'].astype(int) 
-    #for ytick in sorted(df_kum['haus_sum_monatabs']):
-    #    yticks.append(ytick)
-    
-    #ax2.set_yticks(yticks, minor=True)
-    #yt = ax2.get_yticks()
-    #yt = np.append(yt,yticks)
-
-    #print (minor_ticks)
-    #ax.set_yticks(yticks)
-    #ax.set_yticklabels(yticks)
-
-    #ax.grid(which='minor', alpha=0., color='#CCCCCC', linestyle='-.')
-    #ax.grid(which='major', color='#CCCCCC', linestyle='-')
     ax.grid(True, linestyle='-.', color=colors['text-color'])   
     ax.xaxis.grid(False)
 
     for p in ax2.patches:
         ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
-    
-    plt.show()
+
+    ypos = max_value * 0.7
+    print ("ypos", ypos)
+    ax.text(10.5, ypos, f'{kum_value}\nJahresertrag kummuliert', ha='center', color='white', size=20, rotation=-25., style='italic',
+                bbox=dict(boxstyle="round, pad=1",
+                          fc='fuchsia',
+                          ec='lightgrey',
+                          alpha=0.5
+                   )
+    )
+
+    #plt.show()
     
     fig.savefig(f'{plot_filename}', dpi=400)
     #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
@@ -259,7 +285,7 @@ def upload_plot(plot_filename):
     os.system(cmd1)
     os.system(cmd2)
 
-main()
+main(years)
 
 
 
