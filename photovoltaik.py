@@ -30,6 +30,7 @@ if len(sys.argv) > 1:
             years.append(year)
 else:
     years.append(int(current_year))
+    history_flag = 0
 
 #years = [2020,2019]
 
@@ -91,7 +92,7 @@ def start_workflow(key, value, years):
     
         upload_plot(plot_filename)     
 
-    # upload_plot(plotlast7days)
+    upload_plot(plotlast7days)
     if history_flag == 1:
         html(value['plotname'], years)
         upload_html(html_out_filename)
