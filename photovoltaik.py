@@ -25,12 +25,13 @@ current_year = today[6:10]
 years=[]
 if len(sys.argv) > 1:
     if sys.argv[1] == 'history':
-        for year in range(2011, int(current_year)+1):
+        history_flag = 1
+        for year in range(int(current_year), 2010, -1):
             years.append(year)
 else:
     years.append(int(current_year))
 
-years = [2020,2019]
+#years = [2020,2019]
 
 gs_folder = "solar-anlage-gm/"
 
@@ -87,11 +88,13 @@ def start_workflow(key, value, years):
                 print ("alle Daten schon vorhanden")
        
         make_graph(year, path, plot_filename, colors)
+    
         upload_plot(plot_filename)     
 
-    upload_plot(plotlast7days)
-    html(value['plotname'])
-    upload_html(html_out_filename)
+    # upload_plot(plotlast7days)
+    if history_flag == 1:
+        html(value['plotname'], years)
+        upload_html(html_out_filename)
 
 def get_date(url, path):
     #read max date from shelve db
@@ -144,6 +147,7 @@ def make_graph(year, path, plot_filename, colors):
     df_last7days.set_index(df_last7days.Datum, inplace=True)
     df_last7days = df_last7days.resample('D').sum().fillna(0)
     df_last7days = df_last7days.loc[day7:today]
+    
     kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
     max_value_7days = df_last7days['HausGesamt'].max().astype(int) 
 
@@ -162,7 +166,10 @@ def make_graph(year, path, plot_filename, colors):
     ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
     ax1.set_xticks(df_last7days.index)
     ax1.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
+    ax1.set_ylim(0, max_value_7days + 50)
     ax1.grid(True, linestyle='-.', color=colors['text-color']) 
+    ax1.spines['bottom'].set_color(colors['text-color'])
+    ax1.spines['bottom'].set_linestyle('-.')
     #for p in ax1.patches:
     #    ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
 
@@ -303,20 +310,21 @@ def get_values_from_pv(start_date, end_date, url, path):
 
 def upload_plot(plot_filename):
     global gs_folder
-    cmd1 = f'gsutil cp {plot_filename} gs://{gs_folder}'
+    cmd1 = f'gsutil -h "Cache-Control:no-cache,max-age=0" cp -a public-read {plot_filename} gs://{gs_folder}'
     cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{plot_filename}'
     os.system(cmd1)
     os.system(cmd2)
 
 def upload_html(html_out_filename):
     global gs_folder
-    cmd1 = f'gsutil cp html_output/{html_out_filename} gs://{gs_folder}'
+    cmd1 = f'gsutil -h "Cache-Control:no-cache,max-age=0" cp -a public-read html_output/{html_out_filename} gs://{gs_folder}'
     cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{html_out_filename}'
     os.system(cmd1)
     os.system(cmd2)
 
-def html(plotname):
+def html(plotname, years):
     jahre = years[:]
+    print ('jahre', jahre)
     add_line=[]
     i = 1
     html_template = os.path.join(os.path.expanduser(dir+"/html_template"), 'photovoltaik_html_template.html')
@@ -330,14 +338,15 @@ def html(plotname):
 
     for item in html_code:
         if item.find('##TABLEHEADER##') > 0:
-            item = f'''<td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotlast7days}" class="plot"></td>\n'
-            '''
-
+            item = f'<td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotlast7days}" class="plot"></td>\n'
+            
         if item.find('##PV_DATA##') > 0:
             while jahre:
-                year = jahre.pop()
+                year = jahre.pop(0)
+                print (year)
                 item = f'<tr><td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotname}{year}.png" class="plot"></td></tr>\n'
-                if len(years)>0: 
+                if len(jahre)>0: 
+                    print ("html link", item)
                     htmlfile.write(item)
                 else:
                     pass
