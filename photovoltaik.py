@@ -16,6 +16,8 @@ today     = datetime.date.today()
 today     = today.strftime("%d.%m.%Y")
 yesterday = datetime.date.today() - datetime.timedelta(days=1)
 yesterday = yesterday.strftime("%d.%m.%Y")
+day7 = datetime.date.today() - datetime.timedelta(days=7)
+day7 = day7.strftime("%d.%m.%Y")
 
 current_year = today[6:10]
 
@@ -28,9 +30,9 @@ if len(sys.argv) > 1:
 else:
     years.append(int(current_year))
 
-years=[2019,2020]
+years = [2020,2019]
 
-gs_folder = "darkshadow-share/"
+gs_folder = "solar-anlage-gm/"
 
 if sys.platform == "linux" or sys.platform == "linux2":
     dir = '~/photovoltaik/'
@@ -38,16 +40,16 @@ elif sys.platform == "win32":
     dir = 'C:/PV'
 
 anlagen = {
-            # 'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
-            #             'plotname'         : 'mike_pv_'  ,
-            #             'db'               : 'mike_raw_data.db'  ,
-            #             'colors'           : {
-            #                                     'background-color': '#121212', 
-            #                                     'bar-color'       : 'azure',
-            #                                     'text-color'      : 'ivory'
-            #                                  }
-            # }
-            # ,
+            'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
+                        'plotname'         : 'mike_pv_'  ,
+                        'db'               : 'mike_raw_data.db'  ,
+                        'colors'           : {
+                                                'background-color': '#121212', 
+                                                'bar-color'       : 'azure',
+                                                'text-color'      : 'ivory'
+                                             }
+            }
+            ,
             'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
                         'plotname'         : 'halle_pv_'  ,
                         'db'               : 'halle_raw_data.db'  ,
@@ -64,47 +66,32 @@ anlagen = {
 MAX_DAYS = 14
 
 def main(years):
+    # fuer jede Anlage einen Durchlauf
+    for key, value in anlagen.items():
+        start_workflow(key, value, years)
+
+def start_workflow(key, value, years):
+    print (f'Erstelle Auswertung fuer {key} - Jahr: {years}')
     for year in years:
-        # fuer jede Anlage einen Durchlauf
-        for key, value in anlagen.items():
-            url             = value['url']
-            plot_filename   = value['plotname'] + str(year) + '.png'
-            db              = value['db']
-            colors          = value['colors']
-            path            = os.path.join(os.path.expanduser(dir), db) 
-                    
-            #start_date, end_date = get_date(url, path)
-            #get_values_from_pv(start_date, end_date, url, path)
-            make_graph(year, path, plot_filename, colors)
-            upload_plot(plot_filename)
+        url             = value['url']
+        plot_filename   = value['plotname'] + str(year) + '.png'
+        db              = value['db']
+        colors          = value['colors']
+        path            = os.path.join(os.path.expanduser(dir), db)     
+
+        if int(year) == int(current_year):
+            start_date, end_date = get_date(url, path)
+            if not (start_date == yesterday and end_date ==yesterday):
+                get_values_from_pv(start_date, end_date, url, path)
+            else:
+                print ("alle Daten schon vorhanden")
+       
+        make_graph(year, path, plot_filename, colors)
+        upload_plot(plot_filename)     
+
+    upload_plot(plotlast7days)
     html(value['plotname'])
-
-def html(plotname):
-    global years
-    add_line=[]
-    i = 1
-    html_template = os.path.join(os.path.expanduser(dir+"/html_template"), 'photovoltaik_html_template.html')
-    html_template_file = open(html_template, 'r')
-    html_code = html_template_file.readlines()
-
-    global html_out_filename, html_filename
-    html_out_filename = f'{plotname[:-1]}.html'
-    html_filename = os.path.join(os.path.expanduser(dir+"/html_output"), html_out_filename)
-    htmlfile = open (html_filename, 'w')
-
-    for item in html_code:
-        if item.find('##PV_DATA##') > 0:
-            print (item)
-            while years:
-                year = years.pop()
-                print (year)
-                item = f'<tr><td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotname}{year}.png" class="plot"></td></tr>\n'
-                if len(years)>0: 
-                    htmlfile.write(item)
-                else:
-                    pass
-        htmlfile.write(item)
-    htmlfile.close()
+    upload_html(html_out_filename)
 
 def get_date(url, path):
     #read max date from shelve db
@@ -129,6 +116,7 @@ def get_date(url, path):
     return start_date, end_date
 
 def make_graph(year, path, plot_filename, colors):
+    global plotlast7days
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
     datafile = open(filename, 'w')
@@ -150,6 +138,46 @@ def make_graph(year, path, plot_filename, colors):
         datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
         #if i==100: break
+
+    df_last7days = df.head(7)
+    df_last7days['Datum'] = pd.to_datetime(df_last7days['Datum'])
+    df_last7days.set_index(df_last7days.Datum, inplace=True)
+    df_last7days = df_last7days.resample('D').sum().fillna(0)
+    df_last7days = df_last7days.loc[day7:today]
+    kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
+    max_value_7days = df_last7days['HausGesamt'].max().astype(int) 
+
+    if kum_value_7days < 50:
+        color_7day = 'red'
+    elif 50 < kum_value_7days < 400:
+        color_7day = 'orange'
+    else:
+        color_7day = 'green'
+
+    fig, ax1 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
+    name = plot_filename.split('_')
+    ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
+
+    ax1.set_facecolor(colors['background-color'])
+    ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
+    ax1.set_xticks(df_last7days.index)
+    ax1.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
+    ax1.grid(True, linestyle='-.', color=colors['text-color']) 
+    #for p in ax1.patches:
+    #    ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
+
+    plt.text(1, 0.6, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
+                bbox=dict(boxstyle="round, pad=1",
+                          fc=color_7day,
+                          ec='lightgrey',
+                          alpha=0.5
+                   )
+    )
+
+    #plt.show()
+    
+    plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
+    fig.savefig(f'{plotlast7days}', dpi=400)
 
     datafile.close()
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
@@ -182,16 +210,12 @@ def make_graph(year, path, plot_filename, colors):
     df = df[(df.Jahr == int(year))]
     max_value = df_max['haus_sum_monatabs'].max()
     kum_value = df['HausGesamt'].sum().astype(int) 
-    print ("Max_value", max_value)
     #print (df_max)
     #print (df_mean)
     #print (df_min)
 
-    #plt.style.use('seaborn-whitegrid') 
     fig, ax = plt.subplots(figsize=(20, 10), facecolor=colors['background-color'])
-    ax.set_facecolor('#eafff5')
-    #fig.patch.set_alpha(0.5)
-    #fig.figure(figsize=(20,10)) 
+    ax.set_facecolor(colors['background-color'])
     
     name = plot_filename.split('_')
     ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
@@ -225,7 +249,6 @@ def make_graph(year, path, plot_filename, colors):
         ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
 
     ypos = max_value * 0.7
-    print ("ypos", ypos)
     ax.text(10.5, ypos, f'{kum_value}\nJahresertrag kummuliert', ha='center', color='white', size=20, rotation=-25., style='italic',
                 bbox=dict(boxstyle="round, pad=1",
                           fc='fuchsia',
@@ -284,6 +307,42 @@ def upload_plot(plot_filename):
     cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{plot_filename}'
     os.system(cmd1)
     os.system(cmd2)
+
+def upload_html(html_out_filename):
+    global gs_folder
+    cmd1 = f'gsutil cp html_output/{html_out_filename} gs://{gs_folder}'
+    cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{html_out_filename}'
+    os.system(cmd1)
+    os.system(cmd2)
+
+def html(plotname):
+    jahre = years[:]
+    add_line=[]
+    i = 1
+    html_template = os.path.join(os.path.expanduser(dir+"/html_template"), 'photovoltaik_html_template.html')
+    html_template_file = open(html_template, 'r')
+    html_code = html_template_file.readlines()
+
+    global html_out_filename, html_filename
+    html_out_filename = f'{plotname[:-1]}.html'
+    html_filename = os.path.join(os.path.expanduser(dir+"/html_output"), html_out_filename)
+    htmlfile = open (html_filename, 'w')
+
+    for item in html_code:
+        if item.find('##TABLEHEADER##') > 0:
+            item = f'''<td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotlast7days}" class="plot"></td>\n'
+            '''
+
+        if item.find('##PV_DATA##') > 0:
+            while jahre:
+                year = jahre.pop()
+                item = f'<tr><td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotname}{year}.png" class="plot"></td></tr>\n'
+                if len(years)>0: 
+                    htmlfile.write(item)
+                else:
+                    pass
+        htmlfile.write(item)
+    htmlfile.close()
 
 main(years)
 
