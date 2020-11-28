@@ -39,7 +39,7 @@ gs_folder = "solar-anlage-gm/"
 if sys.platform == "linux" or sys.platform == "linux2":
     dir = '~/photovoltaik/'
 elif sys.platform == "win32":
-    dir = 'C:/PV'
+    dir = 'C:/PV/photovoltaik'
 
 anlagen = {
             'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
