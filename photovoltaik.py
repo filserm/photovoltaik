@@ -17,7 +17,7 @@ today     = today.strftime("%d.%m.%Y")
 yesterday = datetime.date.today() - datetime.timedelta(days=1)
 yesterday = yesterday.strftime("%d.%m.%Y")
 day7 = datetime.date.today() - datetime.timedelta(days=7)
-day7 = day7.strftime("%d.%m.%Y")
+day7 = day7.strftime("%Y-%m-%d")
 
 current_year = today[6:10]
 
@@ -65,7 +65,7 @@ anlagen = {
 
 
 
-MAX_DAYS = 14
+MAX_DAYS = 3500
 
 def main(years):
     # fuer jede Anlage einen Durchlauf
@@ -142,15 +142,12 @@ def make_graph(year, path, plot_filename, colors):
         datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
         #if i==100: break
-
-    df_last7days = df.head(7)
-    df_last7days['Datum'] = pd.to_datetime(df_last7days['Datum'])
-    df_last7days.set_index(df_last7days.Datum, inplace=True)
-    df_last7days = df_last7days.resample('D').sum().fillna(0)
-    df_last7days = df_last7days.loc[day7:today]
     
+    df_last7days = df.head(7)
+    df_last7days['Datum'] = pd.to_datetime(df_last7days['Datum'], dayfirst=True)
+    df_last7days.sort_values(by=['Datum'], inplace=True)
     kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
-    max_value_7days = df_last7days['HausGesamt'].max().astype(int) 
+    max_value_7days = df_last7days['HausGesamt'].max()
 
     if kum_value_7days < 50:
         color_7day = 'red'
@@ -164,8 +161,10 @@ def make_graph(year, path, plot_filename, colors):
     ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
 
     ax1.set_facecolor(colors['background-color'])
-    ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
-    ax1.set_xticks(df_last7days.index)
+    #ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
+    ax1.plot(df_last7days['Datum'], df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
+    #ax1.set_xticks(df_last7days.index)
+    ax1.set_xticks(df_last7days['Datum'])
     ax1.tick_params(labelcolor='tab:orange',labelsize='large', width=3)
     ax1.set_ylim(0, max_value_7days + 50)
     ax1.grid(True, linestyle='-.', color=colors['text-color']) 
@@ -182,8 +181,7 @@ def make_graph(year, path, plot_filename, colors):
                    )
     )
 
-    #plt.show()
-    
+    #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
     fig.savefig(f'{plotlast7days}', dpi=400)
 
