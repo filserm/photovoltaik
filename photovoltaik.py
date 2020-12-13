@@ -49,7 +49,8 @@ anlagen = {
                                                 'background-color': '#121212', 
                                                 'bar-color'       : 'azure',
                                                 'text-color'      : 'ivory'
-                                             }
+                                             },
+                        'warning'           : 50
             }
             ,
             'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
@@ -59,7 +60,8 @@ anlagen = {
                                                 'background-color': '#121212', 
                                                 'bar-color'       : 'aqua',
                                                 'text-color'      : 'ivory'
-                                             }
+                                             },
+                        'warning'           : 100
             }
 }
 
@@ -79,6 +81,7 @@ def start_workflow(key, value, years):
         plot_filename   = value['plotname'] + str(year) + '.png'
         db              = value['db']
         colors          = value['colors']
+        warning         = value['warning']
         path            = os.path.join(os.path.expanduser(dir), db)     
 
         if int(year) == int(current_year):
@@ -88,7 +91,7 @@ def start_workflow(key, value, years):
             else:
                 print ("alle Daten schon vorhanden")
        
-        make_graph(year, path, plot_filename, colors)
+        make_graph(year, path, plot_filename, colors, warning)
     
         upload_plot(plot_filename)     
 
@@ -119,7 +122,7 @@ def get_date(url, path):
     print (f'getting values for {start_date} - {end_date}')
     return start_date, end_date
 
-def make_graph(year, path, plot_filename, colors):
+def make_graph(year, path, plot_filename, colors, warning):
     global plotlast7days
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
@@ -149,9 +152,9 @@ def make_graph(year, path, plot_filename, colors):
     kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
     max_value_7days = df_last7days['HausGesamt'].max()
 
-    if kum_value_7days < 50:
+    if kum_value_7days < warning:
         color_7day = 'red'
-    elif 50 < kum_value_7days < 400:
+    elif warning < kum_value_7days < 400:
         color_7day = 'orange'
     else:
         color_7day = 'green'
