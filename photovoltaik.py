@@ -11,6 +11,11 @@ import matplotlib.ticker as plticker
 import pandas as pd
 import numpy as np
 import calendar
+from b2blaze import B2
+#set environment variables B2_KEY_ID and B2_APPLICATION_KEY
+
+global bucketname
+bucketname = 'photovoltaik'
 
 today     = datetime.date.today()
 today     = today.strftime("%d.%m.%Y")
@@ -324,6 +329,21 @@ def upload_html(html_out_filename):
     os.system(cmd1)
     os.system(cmd2)
 
+
+def upload_plot(plot_filename):
+    b2 = B2()
+    bucket = b2.buckets.get(bucketname)
+    plot_file = open(plot_filename, 'rb')
+    bucket.files.upload(contents=plot_file, file_name=plot_filename)
+
+def upload_html_b2(html_out_filename):    
+    b2 = B2()
+    bucket = b2.buckets.get(bucketname)
+
+    html_file = open(html_out_filename, 'rb')
+    bucket.files.upload(contents=html_file, file_name=html_out_filename)
+    
+
 def html(plotname, years):
     jahre = years[:]
     print ('jahre', jahre)
@@ -340,13 +360,13 @@ def html(plotname, years):
 
     for item in html_code:
         if item.find('##TABLEHEADER##') > 0:
-            item = f'<td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotlast7days}" class="plot"></td>\n'
+            item = f'<td colspan = 5><img src="https://f003.backblazeb2.com/file/{bucketname}/{plotlast7days}" class="plot"></td>\n'
             
         if item.find('##PV_DATA##') > 0:
             while jahre:
                 year = jahre.pop(0)
                 print (year)
-                item = f'<tr><td colspan = 5><img src="https://storage.googleapis.com/{gs_folder}{plotname}{year}.png" class="plot"></td></tr>\n'
+                item = f'<tr><td colspan = 5><img src="https://f003.backblazeb2.com/file/{bucketname}/{plotname}{year}.png" class="plot"></td></tr>\n'
                 if len(jahre)>0: 
                     print ("html link", item)
                     htmlfile.write(item)
