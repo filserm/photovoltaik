@@ -42,7 +42,7 @@ else:
 gs_folder = "solar-anlage-gm/"
 
 if sys.platform == "linux" or sys.platform == "linux2":
-    dir = '~/photovoltaik/'
+    dir = '/home/mike/photovoltaik/data'
 elif sys.platform == "win32":
     dir = 'C:/PV/photovoltaik'
 
