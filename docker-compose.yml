@@ -1,0 +1,11 @@
+version: '3'
+services:
+  photovoltaik:
+   build: .
+   container_name: pv
+   environment:
+        - B2_KEY_ID=${B2_KEY_ID}
+        - B2_APPLICATION_KEY=${B2_APPLICATION_KEY}
+   volumes:
+       - ./data:/home/mike/photovoltaik/data
+   tty: true
