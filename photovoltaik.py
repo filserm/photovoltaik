@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
 import requests
-import sys
+import sys, os
 import shelve
-import os
-#from datetime import datetime as dt, date, timedelta
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
@@ -12,10 +10,14 @@ import pandas as pd
 import numpy as np
 import calendar
 from b2blaze import B2
+import time
+import smtplib, ssl
+from email.mime.text import MIMEText
 #set environment variables B2_KEY_ID and B2_APPLICATION_KEY
 
 global bucketname
 bucketname = 'photovoltaik'
+
 
 today     = datetime.date.today()
 today     = today.strftime("%d.%m.%Y")
@@ -41,10 +43,17 @@ else:
 
 gs_folder = "solar-anlage-gm/"
 
-if sys.platform == "linux" or sys.platform == "linux2":
-    dir = '/home/mike/photovoltaik/data'
-elif sys.platform == "win32":
+if sys.platform.startswith('win'):
     dir = 'C:/PV/photovoltaik'
+else:
+    dir = '/home/mike/photovoltaik/data'
+
+myhost = os.uname()[1]
+print (myhost)
+vpn_flag = 1 if myhost.startswith('rasp') else 0
+    
+global last_values_pv
+last_values_pv = {}
 
 anlagen = {
             'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
@@ -75,11 +84,21 @@ anlagen = {
 MAX_DAYS = 3500
 
 def main(years):
+    if vpn_flag == 1: vpn('on')
     # fuer jede Anlage einen Durchlauf
     for key, value in anlagen.items():
         start_workflow(key, value, years)
+    send_email()
+    if vpn_flag == 1: vpn('off')
+
+def vpn(switch):
+    if switch == 'on':
+        os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+    elif switch == 'off':
+        os.system('sudo vpnc-disconnect')    #VPN disconnect
 
 def start_workflow(key, value, years):
+    
     print (f'Erstelle Auswertung fuer {key} - Jahr: {years}')
     for year in years:
         url             = value['url']
@@ -91,28 +110,30 @@ def start_workflow(key, value, years):
 
         if int(year) == int(current_year):
             start_date, end_date = get_date(url, path)
-            if not (start_date == yesterday and end_date ==yesterday):
-                get_values_from_pv(start_date, end_date, url, path)
-            else:
-                print ("alle Daten schon vorhanden")
-       
+            get_values_from_pv(start_date, end_date, url, path, key)
+            return
+
         make_graph(year, path, plot_filename, colors, warning)
     
         upload_plot(plot_filename)     
 
     upload_plot(plotlast7days)
+    
     if history_flag == 1:
         html(value['plotname'], years)
         upload_html(html_out_filename)
 
 def get_date(url, path):
     #read max date from shelve db
-    pv_data = shelve.open(path)
-    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
-        last_date = k[0:10]
-        break
+    try:
+        pv_data = shelve.open(path)
+    except:
+        pass
 
     try:
+        for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+            last_date = k[0:10]
+            break
         print (f'last date value already in database - {last_date}')
         start_date = datetime.datetime.strptime(last_date, '%d.%m.%Y') + datetime.timedelta(days=1)
         start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
@@ -276,7 +297,8 @@ def make_graph(year, path, plot_filename, colors, warning):
     fig.savefig(f'{plot_filename}', dpi=400)
     #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
   
-def get_values_from_pv(start_date, end_date, url, path):
+def get_values_from_pv(start_date, end_date, url, path, key):
+    global last_values_pv
     headers={}
 
     data = {
@@ -299,13 +321,20 @@ def get_values_from_pv(start_date, end_date, url, path):
     values = {}
     for item in kwh_data:
         line_item = item.split(';')
+        #print ("line_item", line_item)
         if 4 <= len(line_item) <=6 :
             datum      = line_item[0]
             wr_gesamt  = line_item[1]
             wr1        = line_item[2]
             wr2        = line_item[3]
+            try:
+                wr3    = line_item[4]
+                wr4    = line_item[5]
+                value_dict = { datum: [wr_gesamt, wr1, wr2, wr3, wr4] }
+            except:
+                value_dict = { datum: [wr_gesamt, wr1, wr2] }
 
-            value_dict = { datum: [wr_gesamt, wr1, wr2] }
+            #value_dict = { datum: [wr_gesamt, wr1, wr2] }
             values.update(value_dict)
     
     #writing data to database
@@ -313,6 +342,20 @@ def get_values_from_pv(start_date, end_date, url, path):
         for k, v in values.items():
             db[k]= v
             print (f'Datum {k} - Werte {v}')
+    
+    pv_data = shelve.open(path)
+    for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
+        hausgesamt = int(item[0]) 
+        wr1        = int(item[1]) 
+        wr2        = int(item[2]) 
+        try:
+            wr3    = int(item[3]) 
+            wr4    = int(item[4])
+            last_values_pv[key] = [k, hausgesamt, wr1, wr2, wr3, wr4]
+        except:
+            last_values_pv[key] = [k, hausgesamt, wr1, wr2]
+        
+        break      
 
 
 def upload_plot(plot_filename):
@@ -374,6 +417,57 @@ def html(plotname, years):
                     pass
         htmlfile.write(item)
     htmlfile.close()
+
+
+
+def send_email():
+    email_from = os.environ.get('EMAIL_FROM')
+    email_to = os.environ.get('EMAIL_TO')
+    email_pw = os.environ.get('EMAIL_PW')
+    port = 587  # For starttls
+    smtp_server = "smtp.gmail.com"
+
+    print (last_values_pv)
+
+    for k, v in last_values_pv.items():
+        print ("key: ", k, "value:", v)
+        if k.startswith('mike'):
+            link = "https://f003.backblazeb2.com/file/photovoltaik/mike_pv.html"
+            msg = MIMEText(f"""
+die PV Anlage {k.upper()} hat für den {v[0][:10]} folgenden Ertrag geliefert:\n
+Gesamt: {v[1]}
+
+Wechselrichter 1: {v[2]}
+Wechselrichter 2: {v[3]}
+
+Link: {link}
+""")
+        else:
+            link = "https://f003.backblazeb2.com/file/photovoltaik/halle_pv.html"
+            msg = MIMEText(f"""
+die PV Anlage {k.upper()} hat für den {v[0][:10]} folgenden Ertrag geliefert:\n
+Gesamt: {v[1]}
+
+Wechselrichter 1: {v[2]}
+Wechselrichter 2: {v[3]}
+Wechselrichter 3: {v[4]}
+Wechselrichter 4: {v[5]}
+
+Link: {link}
+""")
+        msg['Subject'] = f"Photovoltaik Anlage {k.upper()} - Datum: {v[0][:10]}"
+        msg['From'] = email_from
+        msg['To'] = email_to
+
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.starttls(context=context)
+            server.login(email_from, email_pw)
+            server.sendmail(email_from, email_to.split(','), msg.as_string())
+
+
+
 
 main(years)
 

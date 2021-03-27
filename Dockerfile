@@ -1,9 +1,9 @@
 FROM python:3.9-slim
-WORKDIR /home/mike/photovoltaik/
+WORKDIR /photovoltaik/
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY photovoltaik.py /home/mike/photovoltaik/
+COPY photovoltaik_with_vpn_raspi.py /photovoltaik/
 
-ENTRYPOINT ["python", "./photovoltaik.py" ]
+ENTRYPOINT ["python", "./photovoltaik_with_vpn_raspi.py" ]

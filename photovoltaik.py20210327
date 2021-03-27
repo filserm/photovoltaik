@@ -18,6 +18,11 @@ import time
 global bucketname
 bucketname = 'photovoltaik'
 
+os.system('nmcli c up done')
+time.sleep(30)
+os.system('nmcli c down done')
+exit()
+
 
 today     = datetime.date.today()
 today     = today.strftime("%d.%m.%Y")
@@ -82,7 +87,6 @@ def main(years):
         start_workflow(key, value, years)
 
 def start_workflow(key, value, years):
-    os.system('nmcli c up done')      #VPN connect
     print (f'Erstelle Auswertung fuer {key} - Jahr: {years}')
     for year in years:
         url             = value['url']
@@ -104,7 +108,6 @@ def start_workflow(key, value, years):
         upload_plot(plot_filename)     
 
     upload_plot(plotlast7days)
-    os.system('nmcli c down done')    #VPN disconnect
     if history_flag == 1:
         html(value['plotname'], years)
         upload_html(html_out_filename)

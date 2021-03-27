@@ -1,3 +1,4 @@
 *.png
 *.db
 *.xlsx
+*.env

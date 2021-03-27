@@ -1,4 +1,5 @@
 import requests
+import os
 
 def get_values_from_pv(url):
     headers={}
@@ -37,4 +38,5 @@ def get_values_from_pv(url):
 
 url= 'http://192.168.178.58/cgi-bin/download.csv/'
 
+os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
 get_values_from_pv(url)
