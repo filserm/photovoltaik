@@ -111,7 +111,6 @@ def start_workflow(key, value, years):
         if int(year) == int(current_year):
             start_date, end_date = get_date(url, path)
             get_values_from_pv(start_date, end_date, url, path, key)
-            return
 
         make_graph(year, path, plot_filename, colors, warning)
     
@@ -173,6 +172,7 @@ def make_graph(year, path, plot_filename, colors, warning):
         #if i==100: break
     
     df_last7days = df.head(7)
+    print (df.head(7))
     df_last7days['Datum'] = pd.to_datetime(df_last7days['Datum'], dayfirst=True)
     df_last7days.sort_values(by=['Datum'], inplace=True)
     kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
@@ -429,45 +429,41 @@ def send_email():
 
     print (last_values_pv)
 
+    datum = last_values_pv['mike '][0][:10]
+    betreff, body = [f'PV - Anlage: {datum} '], ['Folgende Erträge wurden generiert:\n']
+
     for k, v in last_values_pv.items():
-        print ("key: ", k, "value:", v)
-        if k.startswith('mike'):
-            link = "https://f003.backblazeb2.com/file/photovoltaik/mike_pv.html"
-            msg = MIMEText(f"""
-die PV Anlage {k.upper()} hat für den {v[0][:10]} folgenden Ertrag geliefert:\n
-Gesamt: {v[1]}
+        k=k.replace(' ','')
+        betreff.append(f'## {k} - {v[1]} ')
+        body.append(f'{k}\n')
 
-Wechselrichter 1: {v[2]}
-Wechselrichter 2: {v[3]}
+        for i in range(len(v)):
+            
+            if i == 0: 
+                pass
+            elif i == 1:
+                value = format(int(v[i]),',').replace(',','.')
+                body.append(f'Gesamt: {value}')
+            else:         
+                value = format(int(v[i]),',').replace(',','.')
+                body.append(f'Wechselrichter {i-1}: {value}')
 
-Link: {link}
-""")
-        else:
-            link = "https://f003.backblazeb2.com/file/photovoltaik/halle_pv.html"
-            msg = MIMEText(f"""
-die PV Anlage {k.upper()} hat für den {v[0][:10]} folgenden Ertrag geliefert:\n
-Gesamt: {v[1]}
+        link = f'\nhttps://f003.backblazeb2.com/file/photovoltaik/{k}_pv.html\n'
+        body.append(link)
 
-Wechselrichter 1: {v[2]}
-Wechselrichter 2: {v[3]}
-Wechselrichter 3: {v[4]}
-Wechselrichter 4: {v[5]}
+    betreff = ''.join(betreff)
+    body = '\n'.join(body)
+    
+    msg=MIMEText(f'{body}')
+    msg['Subject'] = betreff
+    msg['From'] = email_from
+    msg['To'] = email_to
 
-Link: {link}
-""")
-        msg['Subject'] = f"Photovoltaik Anlage {k.upper()} - Datum: {v[0][:10]}"
-        msg['From'] = email_from
-        msg['To'] = email_to
-
-
-        context = ssl.create_default_context()
-        with smtplib.SMTP(smtp_server, port) as server:
-            server.starttls(context=context)
-            server.login(email_from, email_pw)
-            server.sendmail(email_from, email_to.split(','), msg.as_string())
-
-
-
+    context = ssl.create_default_context()
+    with smtplib.SMTP(smtp_server, port) as server:
+        server.starttls(context=context)
+        server.login(email_from, email_pw)
+        server.sendmail(email_from, email_to.split(','), msg.as_string())
 
 main(years)
 
