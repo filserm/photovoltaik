@@ -1,24 +1,42 @@
 import smtplib, ssl, os
 
-email_from = os.environ.get('EMAIL_FROM')
-email_to = os.environ.get('EMAIL_TO')
-email_pw = os.environ.get('EMAIL_PW')
 
+last_values_pv = {'mike ': ['27.03.2021 00:00:00', 52692, 16707, 35985], 'halle': ['27.03.2021 00:00:00', 132108, 32693, 32590, 33710, 33115]}
 
-port = 587  # For starttls
-smtp_server = "smtp.gmail.com"
-sender_email = email_from
-receiver_email = email_to
-message = """\
-Subject: PV - Anlage
+def send_email():
+    email_from = os.environ.get('EMAIL_FROM')
+    email_to = os.environ.get('EMAIL_TO')
+    email_pw = os.environ.get('EMAIL_PW')
+    port = 587  # For starttls
+    smtp_server = "smtp.gmail.com"
+    
+    print (last_values_pv)
+    datum = last_values_pv['mike '][0][:10]
+    betreff, body = [f'PV - Anlage: {datum} '], ['Folgende Erträge wurden generiert:\n']
 
-This message is sent from Python."""
+    for k, v in last_values_pv.items():
+        k=k.replace(' ','')
+        betreff.append(f'## {k} - {v[1]} ')
+        body.append(f'{k}\n')
 
-context = ssl.create_default_context()
-with smtplib.SMTP(smtp_server, port) as server:
-    server.ehlo()  # Can be omitted
-    server.starttls(context=context)
-    server.ehlo()  # Can be omitted
-    server.login(sender_email, email_pw)
-    server.sendmail(sender_email, receiver_email.split(','), message)
+        for i in range(len(v)):
+            
+            if i == 0: 
+                pass
+            elif i == 1:
+                value = format(int(v[i]),',').replace(',','.')
+                body.append(f'Gesamt: {value}')
+            else:         
+                value = format(int(v[i]),',').replace(',','.')
+                body.append(f'Wechselrichter {i-1}: {value}')
 
+        link = f'\nhttps://f003.backblazeb2.com/file/photovoltaik/{k}_pv.html\n'
+        body.append(link)
+
+    betreff = ''.join(betreff)
+    body = '\n'.join(body)
+
+    print (betreff)
+    
+    
+send_email()

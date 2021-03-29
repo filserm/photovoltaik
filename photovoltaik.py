@@ -25,8 +25,10 @@ yesterday = datetime.date.today() - datetime.timedelta(days=1)
 yesterday = yesterday.strftime("%d.%m.%Y")
 day7 = datetime.date.today() - datetime.timedelta(days=7)
 day7 = day7.strftime("%Y-%m-%d")
+weekday = int(datetime.datetime.today().strftime('%w'))+1
 
 current_year = today[6:10]
+jan_01_current_year = current_year + '-01-01'
 
 #historische Datenaufbereitung
 years=[]
@@ -54,9 +56,10 @@ vpn_flag = 1 if myhost.startswith('rasp') else 0
     
 global last_values_pv
 last_values_pv = {}
+max_value_this_year_dict = {}
 
 anlagen = {
-            'mike ' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
+            'mike' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
                         'plotname'         : 'mike_pv_'  ,
                         'db'               : 'mike_raw_data.db'  ,
                         'colors'           : {
@@ -64,7 +67,8 @@ anlagen = {
                                                 'bar-color'       : 'azure',
                                                 'text-color'      : 'ivory'
                                              },
-                        'warning'           : 50
+                        'warning'           : 50,
+                        'limit_wechselrichter': 50000,
             }
             ,
             'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
@@ -75,7 +79,8 @@ anlagen = {
                                                 'bar-color'       : 'aqua',
                                                 'text-color'      : 'ivory'
                                              },
-                        'warning'           : 100
+                        'warning'           : 100,
+                        'limit_wechselrichter': 50000,
             }
 }
 
@@ -148,31 +153,40 @@ def get_date(url, path):
     return start_date, end_date
 
 def make_graph(year, path, plot_filename, colors, warning):
-    global plotlast7days
+    global plotlast7days, max_value_this_year_dict
+    
+    name = plot_filename.split('_')
+
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
     datafile = open(filename, 'w')
     datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\n')
     
-    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'HausGesamt', 'WR1', 'WR2'))
+    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2'))
     #idx = pd.date_range('01-01-2011', '12-31-2020')
     i=0
     for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
         jahr       = int(k[6:10])
         monatabs   = str(k[6:10]+k[3:5])
         monat      = int(k[3:5])
+        tag        = str(jahr) + '-' + k[3:5] + '-' + k[0:2]
         #hausgesamt = float(int(item[0])/int(1000))
         hausgesamt = int(item[0]) / 1000
         #hausgesamt_anz= str(hausgesamt).replace('.','')
         wr1        = int(item[1])
         wr2        = int(item[2])
-        df.loc[i] = [k, jahr, monatabs, monat, hausgesamt, wr1,wr2]
-        datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{hausgesamt}\t{wr1}\t{wr2}\n')
+        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2]
+        datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
-        #if i==100: break
+        if i==100: break
     
+    mask = (df['Tag'] >= jan_01_current_year) & (df['Tag'] <= yesterday)
+    max_value_thisyear = df[df['HausGesamt']==df.loc[mask]['HausGesamt'].max()]
+    max_val_day = max_value_thisyear['Tag'].iloc[0]
+    max_val_val = max_value_thisyear['HausGesamt'].iloc[0]
+    max_value_this_year_dict[name[0]] = [max_val_day, max_val_val]
+
     df_last7days = df.head(7)
-    print (df.head(7))
     df_last7days['Datum'] = pd.to_datetime(df_last7days['Datum'], dayfirst=True)
     df_last7days.sort_values(by=['Datum'], inplace=True)
     kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
@@ -186,7 +200,7 @@ def make_graph(year, path, plot_filename, colors, warning):
         color_7day = 'green'
 
     fig, ax1 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
-    name = plot_filename.split('_')
+    
     ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
 
     ax1.set_facecolor(colors['background-color'])
@@ -420,20 +434,88 @@ def html(plotname, years):
 
 
 
+# def send_email():
+#     email_from = os.environ.get('EMAIL_FROM')
+#     email_to = os.environ.get('EMAIL_TO')
+#     email_pw = os.environ.get('EMAIL_PW')
+#     port = 587  # For starttls
+#     smtp_server = "smtp.gmail.com"
+
+#     print (last_values_pv)
+
+#     datum = last_values_pv['mike '][0][:10]
+#     betreff, body = [f'PV - Anlage: {datum} '], ['Folgende Erträge wurden generiert:\n']
+
+#     for k, v in last_values_pv.items():
+#         k=k.replace(' ','')
+#         betreff.append(f'## {k} - {v[1]} ')
+#         body.append(f'{k}\n')
+
+#         for i in range(len(v)):
+            
+#             if i == 0: 
+#                 pass
+#             elif i == 1:
+#                 value = format(int(v[i]),',').replace(',','.')
+#                 body.append(f'Gesamt: {value}')
+#             else:         
+#                 value = format(int(v[i]),',').replace(',','.')
+#                 body.append(f'Wechselrichter {i-1}: {value}')
+
+#         link = f'\nhttps://f003.backblazeb2.com/file/photovoltaik/{k}_pv.html\n'
+#         body.append(link)
+
+#     betreff = ''.join(betreff)
+#     body = '\n'.join(body)
+    
+#     msg=MIMEText(f'{body}')
+#     msg['Subject'] = betreff
+#     msg['From'] = email_from
+#     msg['To'] = email_to
+
+#     context = ssl.create_default_context()
+#     with smtplib.SMTP(smtp_server, port) as server:
+#         server.starttls(context=context)
+#         server.login(email_from, email_pw)
+#         server.sendmail(email_from, email_to.split(','), msg.as_string())
+
+def send_pushover(title, message):
+    user_key = os.environ.get('PUSHOVER_USER_KEY')
+    api_token = os.environ.get('PUSHOVER_API_TOKEN')
+
+    r = requests.post("https://api.pushover.net/1/messages.json", data = {
+    "token": api_token,
+    "user": user_key,
+    "title": title,
+    "message": message,
+    "sound": "echo",
+    "priority": 1,
+    },
+    files = {
+      "attachment": ("image.jpg", open("/home/mike/photovoltaik/photovoltaik_modul.jpg", "rb"), "image/jpeg")
+    }
+    )
+    print(r.text)
+    
+def init_body():
+    return []
+
 def send_email():
+    print (max_value_this_year_dict)
+
     email_from = os.environ.get('EMAIL_FROM')
     email_to = os.environ.get('EMAIL_TO')
     email_pw = os.environ.get('EMAIL_PW')
     port = 587  # For starttls
     smtp_server = "smtp.gmail.com"
-
+    pushover_notification, message_pushover, body_dict ={}, {}, {}
+    
     print (last_values_pv)
-
-    datum = last_values_pv['mike '][0][:10]
-    betreff, body = [f'PV - Anlage: {datum} '], ['Folgende Erträge wurden generiert:\n']
+    datum = last_values_pv['mike'][0][:10]
+    betreff = [f'PV - Anlage: {datum} '] 
+    body = init_body()
 
     for k, v in last_values_pv.items():
-        k=k.replace(' ','')
         betreff.append(f'## {k} - {v[1]} ')
         body.append(f'{k}\n')
 
@@ -447,12 +529,40 @@ def send_email():
             else:         
                 value = format(int(v[i]),',').replace(',','.')
                 body.append(f'Wechselrichter {i-1}: {value}')
-
-        link = f'\nhttps://f003.backblazeb2.com/file/photovoltaik/{k}_pv.html\n'
+                if int(v[i]) < anlagen[k]['limit_wechselrichter']:
+                  pushover_notification[k] = 1
+        
+        try:
+            if pushover_notification[k] == 1:
+                message_pushover[k] = '\n'.join(body[:])
+        except:
+            pass
+        
+        body.append(f'Höchster Tagesertrag in diesem Jahr: {max_value_this_year_dict[k]}\n')
+        link = f'\nhttps://f003.backblazeb2.com/file/photovoltaik/{k}_pv.html\n\n'
         body.append(link)
 
+        body = '\n'.join(body)
+        body_dict[k] = body[:]
+        body = init_body()
+
     betreff = ''.join(betreff)
-    body = '\n'.join(body)
+    
+
+    #### send push notification if value is below limimt
+    for k, v in message_pushover.items():
+        title = f'Photovoltaik Minderertrag - Anlage: {k}'        
+        message = v
+        send_pushover(title, message)
+
+    #### send email if it's sunday
+    if weekday == 2:
+        body = init_body()
+        body.append('Folgende Erträge wurden generiert:\n')
+        for k, v in body_dict.items():
+            body.append(v)
+        body = ''.join(body)
+        print (body)
     
     msg=MIMEText(f'{body}')
     msg['Subject'] = betreff
@@ -464,6 +574,7 @@ def send_email():
         server.starttls(context=context)
         server.login(email_from, email_pw)
         server.sendmail(email_from, email_to.split(','), msg.as_string())
+
 
 main(years)
 
