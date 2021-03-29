@@ -14,6 +14,7 @@ import time
 import smtplib, ssl
 from email.mime.text import MIMEText
 #set environment variables B2_KEY_ID and B2_APPLICATION_KEY
+from telegram.ext import Updater
 
 global bucketname
 bucketname = 'photovoltaik'
@@ -496,7 +497,14 @@ def send_pushover(title, message):
     }
     )
     print(r.text)
-    
+
+def send_telegram(message):
+    api_token = os.environ.get('TELEGRAM_API_TOKEN')
+    chat_id   = os.environ.get('TELEGRAM_CHAT_ID')
+
+    updater = Updater(api_token)
+    updater.bot.sendMessage(chat_id=chat_id, text=message)
+
 def init_body():
     return []
 
@@ -551,12 +559,13 @@ def send_email():
 
     #### send push notification if value is below limimt
     for k, v in message_pushover.items():
-        title = f'Photovoltaik Minderertrag - Anlage: {k}'        
+        title = f'Photovoltaik Minderertrag - Anlage: '        
         message = v
-        send_pushover(title, message)
+        #send_pushover(title, message)
+        send_telegram(message=title+message)
 
     #### send email if it's sunday
-    if weekday == 2:
+    if weekday == 1: 
         body = init_body()
         body.append('Folgende Erträge wurden generiert:\n')
         for k, v in body_dict.items():
