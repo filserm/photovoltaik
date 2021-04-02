@@ -23,7 +23,9 @@ bucketname = 'photovoltaik'
 today     = datetime.date.today()
 today     = today.strftime("%d.%m.%Y")
 yesterday = datetime.date.today() - datetime.timedelta(days=1)
+yesterday_diff_fmt = yesterday.strftime("%Y-%m-%d")
 yesterday = yesterday.strftime("%d.%m.%Y")
+
 day7 = datetime.date.today() - datetime.timedelta(days=7)
 day7 = day7.strftime("%Y-%m-%d")
 weekday = int(datetime.datetime.today().strftime('%w'))+1
@@ -179,9 +181,9 @@ def make_graph(year, path, plot_filename, colors, warning):
         df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2]
         datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
-        if i==100: break
+        #if i==100: break
     
-    mask = (df['Tag'] >= jan_01_current_year) & (df['Tag'] <= yesterday)
+    mask = (df['Tag'] >= jan_01_current_year) & (df['Tag'] <= yesterday_diff_fmt)
     max_value_thisyear = df[df['HausGesamt']==df.loc[mask]['HausGesamt'].max()]
     max_val_day = max_value_thisyear['Tag'].iloc[0]
     max_val_val = max_value_thisyear['HausGesamt'].iloc[0]
@@ -433,70 +435,23 @@ def html(plotname, years):
         htmlfile.write(item)
     htmlfile.close()
 
+# def send_pushover(title, message):
+#     user_key = os.environ.get('PUSHOVER_USER_KEY')
+#     api_token = os.environ.get('PUSHOVER_API_TOKEN')
 
-
-# def send_email():
-#     email_from = os.environ.get('EMAIL_FROM')
-#     email_to = os.environ.get('EMAIL_TO')
-#     email_pw = os.environ.get('EMAIL_PW')
-#     port = 587  # For starttls
-#     smtp_server = "smtp.gmail.com"
-
-#     print (last_values_pv)
-
-#     datum = last_values_pv['mike '][0][:10]
-#     betreff, body = [f'PV - Anlage: {datum} '], ['Folgende Erträge wurden generiert:\n']
-
-#     for k, v in last_values_pv.items():
-#         k=k.replace(' ','')
-#         betreff.append(f'## {k} - {v[1]} ')
-#         body.append(f'{k}\n')
-
-#         for i in range(len(v)):
-            
-#             if i == 0: 
-#                 pass
-#             elif i == 1:
-#                 value = format(int(v[i]),',').replace(',','.')
-#                 body.append(f'Gesamt: {value}')
-#             else:         
-#                 value = format(int(v[i]),',').replace(',','.')
-#                 body.append(f'Wechselrichter {i-1}: {value}')
-
-#         link = f'\nhttps://f003.backblazeb2.com/file/photovoltaik/{k}_pv.html\n'
-#         body.append(link)
-
-#     betreff = ''.join(betreff)
-#     body = '\n'.join(body)
-    
-#     msg=MIMEText(f'{body}')
-#     msg['Subject'] = betreff
-#     msg['From'] = email_from
-#     msg['To'] = email_to
-
-#     context = ssl.create_default_context()
-#     with smtplib.SMTP(smtp_server, port) as server:
-#         server.starttls(context=context)
-#         server.login(email_from, email_pw)
-#         server.sendmail(email_from, email_to.split(','), msg.as_string())
-
-def send_pushover(title, message):
-    user_key = os.environ.get('PUSHOVER_USER_KEY')
-    api_token = os.environ.get('PUSHOVER_API_TOKEN')
-
-    r = requests.post("https://api.pushover.net/1/messages.json", data = {
-    "token": api_token,
-    "user": user_key,
-    "title": title,
-    "message": message,
-    "sound": "echo",
-    "priority": 1,
-    },
-    files = {
-      "attachment": ("image.jpg", open("/home/mike/photovoltaik/photovoltaik_modul.jpg", "rb"), "image/jpeg")
-    }
-    )
-    print(r.text)
+#     r = requests.post("https://api.pushover.net/1/messages.json", data = {
+#     "token": api_token,
+#     "user": user_key,
+#     "title": title,
+#     "message": message,
+#     "sound": "echo",
+#     "priority": 1,
+#     },
+#     files = {
+#       "attachment": ("image.jpg", open("/home/mike/photovoltaik/photovoltaik_modul.jpg", "rb"), "image/jpeg")
+#     }
+#     )
+#     print(r.text)
 
 def send_telegram(message):
     api_token = os.environ.get('TELEGRAM_API_TOKEN')
