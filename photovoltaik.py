@@ -71,7 +71,7 @@ anlagen = {
                                                 'text-color'      : 'ivory'
                                              },
                         'warning'           : 50,
-                        'limit_wechselrichter': 50000,
+                        'limit_wechselrichter': 5000,
             }
             ,
             'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
@@ -83,7 +83,7 @@ anlagen = {
                                                 'text-color'      : 'ivory'
                                              },
                         'warning'           : 100,
-                        'limit_wechselrichter': 50000,
+                        'limit_wechselrichter': 5000,
             }
 }
 
@@ -519,7 +519,7 @@ def send_email():
         #send_pushover(title, message)
         send_telegram(message=title+message)
 
-    #### send email if it's sunday
+    #### send email if it's saturday
     if weekday == 1: 
         body = init_body()
         body.append('Folgende Erträge wurden generiert:\n')
@@ -528,16 +528,16 @@ def send_email():
         body = ''.join(body)
         print (body)
     
-    msg=MIMEText(f'{body}')
-    msg['Subject'] = betreff
-    msg['From'] = email_from
-    msg['To'] = email_to
+        msg=MIMEText(f'{body}')
+        msg['Subject'] = betreff
+        msg['From'] = email_from
+        msg['To'] = email_to
 
-    context = ssl.create_default_context()
-    with smtplib.SMTP(smtp_server, port) as server:
-        server.starttls(context=context)
-        server.login(email_from, email_pw)
-        server.sendmail(email_from, email_to.split(','), msg.as_string())
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.starttls(context=context)
+            server.login(email_from, email_pw)
+            server.sendmail(email_from, email_to.split(','), msg.as_string())
 
 
 main(years)
