@@ -219,7 +219,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     #for p in ax1.patches:
     #    ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
 
-    plt.text(1, 0.6, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
+    plt.text(1, 0.9, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
                 bbox=dict(boxstyle="round, pad=1",
                           fc=color_7day,
                           ec='lightgrey',
@@ -229,7 +229,7 @@ def make_graph(year, path, plot_filename, colors, warning):
 
     for i in range(len(df_last7days)):
         print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
-        plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+5, str(int(df_last7days['HausGesamt'][i])), color=colors['text-color'], size=20)
+        plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=20)
     
     #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
