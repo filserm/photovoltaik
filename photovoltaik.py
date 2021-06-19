@@ -117,14 +117,15 @@ def start_workflow(key, value, years):
         path            = os.path.join(os.path.expanduser(dir), db)     
 
         if int(year) == int(current_year):
-            start_date, end_date = get_date(url, path)
-            get_values_from_pv(start_date, end_date, url, path, key)
+           start_date, end_date = get_date(url, path)
+           get_values_from_pv(start_date, end_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
-    
+        exit()
         upload_plot(plot_filename)     
 
     upload_plot(plotlast7days)
+    upload_plot(plotwr)
     
     if history_flag == 1:
         html(value['plotname'], years)
@@ -156,16 +157,16 @@ def get_date(url, path):
     return start_date, end_date
 
 def make_graph(year, path, plot_filename, colors, warning):
-    global plotlast7days, max_value_this_year_dict
+    global plotlast7days, plotwr, max_value_this_year_dict
     
     name = plot_filename.split('_')
 
     pv_data = shelve.open(path)
     filename = 'values.xlsx'
     datafile = open(filename, 'w')
-    datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\n')
+    datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\tWR3\tWR4\n')
     
-    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2'))
+    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2', 'WR3', 'WR4'))
     #idx = pd.date_range('01-01-2011', '12-31-2020')
     i=0
     for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
@@ -178,11 +179,18 @@ def make_graph(year, path, plot_filename, colors, warning):
         #hausgesamt_anz= str(hausgesamt).replace('.','')
         wr1        = int(item[1])
         wr2        = int(item[2])
-        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2]
+        try:
+            wr3    = int(item[3])
+            wr4    = int(item[4])
+        except:
+            wr3 = 0
+            wr4 = 0
+        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4]
         datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
         #if i==100: break
     
+    #### last 7 days #####
     mask = (df['Tag'] >= jan_01_current_year) & (df['Tag'] <= yesterday_diff_fmt)
     max_value_thisyear = df[df['HausGesamt']==df.loc[mask]['HausGesamt'].max()]
     max_val_day = max_value_thisyear['Tag'].iloc[0]
@@ -228,12 +236,52 @@ def make_graph(year, path, plot_filename, colors, warning):
     )
 
     for i in range(len(df_last7days)):
-        print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
+        #print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
         plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=20)
     
     #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
     fig.savefig(f'{plotlast7days}', dpi=400)
+
+    #### END END END last 7 days END END END #####
+
+
+    #### Wechselrichter #####
+    color_wr = ["#006D2C", "#31A354","#74C476", "#a5f2a7"]
+    text_color_wr = 'silver'
+
+    df_wr = df.head(7)
+    df_wr.drop(df_wr.head(1).index,inplace=True)
+    df_wr['Datum'] = pd.to_datetime(df_wr['Datum'], dayfirst=True)
+    df_wr.sort_values(by=['Datum'], inplace=True)
+
+    print (df_wr)
+
+    fig1, ax3 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
+    
+    ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
+
+    ax3.set_facecolor(colors['background-color'])
+    ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
+    ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=2)
+    try:
+        ax3.bar(df_wr['Datum'], df_wr['WR1'], bottom=df_wr['WR2'], color=color_wr[2], label='kWh', linewidth=4.0, zorder=2)
+        ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR3'], color=color_wr[3], label='kWh', linewidth=4.0, zorder=2)
+    except:
+        pass
+    ax3.set_xticks(df_wr['Datum'])
+    ax3.tick_params(labelcolor=text_color_wr,labelsize='large', width=3, labelright='true')
+    #ax3.set_ylim(0, max_value_7days + 50)
+    ax3.grid(True, linestyle='-.', color=text_color_wr) 
+    ax3.spines['bottom'].set_color(text_color_wr)
+    ax3.spines['bottom'].set_linestyle('-.')
+    plt.show() 
+    plotwr = plot_filename.split('_')[0]+'_wr.png'
+    fig.savefig(f'{plotwr}', dpi=400)
+
+    #### END END END Wechselrichter END END END #####
+
+
 
     datafile.close()
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
@@ -425,6 +473,7 @@ def html(plotname, years):
     for item in html_code:
         if item.find('##TABLEHEADER##') > 0:
             item = f'<td colspan = 5><img src="https://f003.backblazeb2.com/file/{bucketname}/{plotlast7days}" class="plot"></td>\n'
+            item = f'<td colspan = 5><img src="https://f003.backblazeb2.com/file/{bucketname}/{plotwr}" class="plot"></td>\n'
             
         if item.find('##PV_DATA##') > 0:
             while jahre:
