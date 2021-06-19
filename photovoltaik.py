@@ -121,7 +121,7 @@ def start_workflow(key, value, years):
            get_values_from_pv(start_date, end_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
-        exit()
+    
         upload_plot(plot_filename)     
 
     upload_plot(plotlast7days)
