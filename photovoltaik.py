@@ -74,17 +74,17 @@ anlagen = {
                         'limit_wechselrichter': 5000,
             }
             ,
-            'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
-                        'plotname'         : 'halle_pv_'  ,
-                        'db'               : 'halle_raw_data.db'  ,
-                        'colors'           : {
-                                                'background-color': '#121212', 
-                                                'bar-color'       : 'aqua',
-                                                'text-color'      : 'ivory'
-                                             },
-                        'warning'           : 100,
-                        'limit_wechselrichter': 5000,
-            }
+            #'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
+            #            'plotname'         : 'halle_pv_'  ,
+            #            'db'               : 'halle_raw_data.db'  ,
+            #            'colors'           : {
+            #                                    'background-color': '#121212', 
+            #                                    'bar-color'       : 'aqua',
+            #                                    'text-color'      : 'ivory'
+            #                                 },
+            #            'warning'           : 100,
+            #            'limit_wechselrichter': 5000,
+            #}
 }
 
 
@@ -473,6 +473,7 @@ def html(plotname, years):
     for item in html_code:
         if item.find('##TABLEHEADER##') > 0:
             item = f'<td colspan = 5><img src="https://f003.backblazeb2.com/file/{bucketname}/{plotlast7days}" class="plot"></td>\n'
+        if item.find('##WR_DATA##') > 0:
             item = f'<td colspan = 5><img src="https://f003.backblazeb2.com/file/{bucketname}/{plotwr}" class="plot"></td>\n'
             
         if item.find('##PV_DATA##') > 0:
