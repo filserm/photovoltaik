@@ -96,7 +96,7 @@ def main(years):
     # fuer jede Anlage einen Durchlauf
     for key, value in anlagen.items():
         start_workflow(key, value, years)
-    send_email()
+    #send_email()
     if vpn_flag == 1: vpn('off')
 
 def vpn(switch):
@@ -277,7 +277,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax3.spines['bottom'].set_linestyle('-.')
     #plt.show() 
     plotwr = plot_filename.split('_')[0]+'_wr.png'
-    fig.savefig(f'{plotwr}', dpi=400)
+    fig1.savefig(f'{plotwr}', dpi=400)
 
     #### END END END Wechselrichter END END END #####
 
