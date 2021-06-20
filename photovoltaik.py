@@ -251,7 +251,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     text_color_wr = 'silver'
 
     df_wr = df.head(7)
-    df_wr.drop(df_wr.head(1).index,inplace=True)
+    #df_wr.drop(df_wr.head(1).index,inplace=True)
     df_wr['Datum'] = pd.to_datetime(df_wr['Datum'], dayfirst=True)
     df_wr.sort_values(by=['Datum'], inplace=True)
 
@@ -275,7 +275,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax3.grid(True, linestyle='-.', color=text_color_wr) 
     ax3.spines['bottom'].set_color(text_color_wr)
     ax3.spines['bottom'].set_linestyle('-.')
-    plt.show() 
+    #plt.show() 
     plotwr = plot_filename.split('_')[0]+'_wr.png'
     fig.savefig(f'{plotwr}', dpi=400)
 
