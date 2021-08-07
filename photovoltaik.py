@@ -390,15 +390,15 @@ def get_values_from_pv(start_date, end_date, url, path, key):
     values = {}
     for item in kwh_data:
         line_item = item.split(';')
-        #print ("line_item", line_item)
+        print ("line_item", line_item)
         if 4 <= len(line_item) <=6 :
             datum      = line_item[0]
             wr_gesamt  = line_item[1]
-            wr1        = line_item[2]
-            wr2        = line_item[3]
+            wr1        = line_item[3]
+            wr2        = line_item[4]
             try:
-                wr3    = line_item[4]
-                wr4    = line_item[5]
+                wr3    = line_item[5]
+                wr4    = line_item[6]
                 value_dict = { datum: [wr_gesamt, wr1, wr2, wr3, wr4] }
             except:
                 value_dict = { datum: [wr_gesamt, wr1, wr2] }
