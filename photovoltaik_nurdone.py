@@ -74,7 +74,7 @@ anlagen = {
             #             'limit_wechselrichter': 5000,
             # }
             # ,
-            'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
+            'halle' : { 'url'              : 'http://192.168.178.199/cgi-bin/download.csv/',
                        'plotname'         : 'halle_pv_'  ,
                        'db'               : 'halle_raw_data.db'  ,
                        'colors'           : {
