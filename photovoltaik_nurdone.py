@@ -89,7 +89,7 @@ anlagen = {
 
 
 
-MAX_DAYS = 3500
+MAX_DAYS = 4000
 
 def main(years):
     if vpn_flag == 1: vpn('on')
