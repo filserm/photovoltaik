@@ -73,7 +73,7 @@ anlagen = {
             #             'warning'           : 50,
             #             'limit_wechselrichter': 5000,
             # }
-            # ,
+            #,
             'halle' : { 'url'              : 'http://192.168.178.199/cgi-bin/download.csv/',
                        'plotname'         : 'halle_pv_'  ,
                        'db'               : 'halle_raw_data.db'  ,
@@ -391,20 +391,24 @@ def get_values_from_pv(start_date, end_date, url, path, key):
     for item in kwh_data:
         line_item = item.split(';')
         print ("line_item", line_item)
-        if 4 <= len(line_item) <=6 :
-            datum      = line_item[0]
-            wr_gesamt  = line_item[1]
-            wr1        = line_item[3]
+        datum      = line_item[0]
+        wr_gesamt  = line_item[1]
+        if len(line_item) == 5: #falls anlage mike, alles WR um 1 verschoben
+            wr1        = line_item[3] 
             wr2        = line_item[4]
-            try:
-                wr3    = line_item[5]
-                wr4    = line_item[6]
-                value_dict = { datum: [wr_gesamt, wr1, wr2, wr3, wr4] }
-            except:
-                value_dict = { datum: [wr_gesamt, wr1, wr2] }
+        else:
+            wr1        = line_item[2] 
+            wr2        = line_item[3]
+        try:
+            wr3    = line_item[4]
+            wr4    = line_item[5]
+            value_dict = { datum: [wr_gesamt, wr1, wr2, wr3, wr4] }
+        except:
+            value_dict = { datum: [wr_gesamt, wr1, wr2] }
 
-            #value_dict = { datum: [wr_gesamt, wr1, wr2] }
-            values.update(value_dict)
+        #value_dict = { datum: [wr_gesamt, wr1, wr2] }
+        print ("value_dict: ", value_dict)
+        values.update(value_dict)
     
     #writing data to database
     with shelve.open(path) as db:
