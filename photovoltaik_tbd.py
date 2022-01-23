@@ -74,22 +74,22 @@ anlagen = {
                         'limit_wechselrichter': 5000,
             }
             ,
-            'halle' : { 'url'              : 'http://192.168.178.199/cgi-bin/download.csv/',
-                       'plotname'         : 'halle_pv_'  ,
-                       'db'               : 'halle_raw_data.db'  ,
-                       'colors'           : {
-                                               'background-color': '#121212', 
-                                               'bar-color'       : 'aqua',
-                                               'text-color'      : 'ivory'
-                                            },
-                       'warning'           : 100,
-                       'limit_wechselrichter': 5000,
-            }
+            #'halle' : { 'url'              : 'http://192.168.178.57/cgi-bin/download.csv/',
+            #            'plotname'         : 'halle_pv_'  ,
+            #            'db'               : 'halle_raw_data.db'  ,
+            #            'colors'           : {
+            #                                    'background-color': '#121212', 
+            #                                    'bar-color'       : 'aqua',
+            #                                    'text-color'      : 'ivory'
+            #                                 },
+            #            'warning'           : 100,
+            #            'limit_wechselrichter': 5000,
+            #}
 }
 
 
 
-MAX_DAYS = 4000
+MAX_DAYS = 3500
 
 def main(years):
     if vpn_flag == 1: vpn('on')
@@ -210,7 +210,6 @@ def make_graph(year, path, plot_filename, colors, warning):
     else:
         color_7day = 'green'
 
-    print ("background: ", colors['background-color'])
     fig, ax1 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
     
     ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
@@ -242,7 +241,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     
     #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
-    fig.savefig(f'{plotlast7days}', dpi=400, facecolor=colors['background-color'])
+    fig.savefig(f'{plotlast7days}', dpi=400)
 
     #### END END END last 7 days END END END #####
 
@@ -278,7 +277,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax3.spines['bottom'].set_linestyle('-.')
     #plt.show() 
     plotwr = plot_filename.split('_')[0]+'_wr.png'
-    fig1.savefig(f'{plotwr}', dpi=400, facecolor=colors['background-color'])
+    fig1.savefig(f'{plotwr}', dpi=400)
 
     #### END END END Wechselrichter END END END #####
 
@@ -364,7 +363,7 @@ def make_graph(year, path, plot_filename, colors, warning):
 
     #plt.show()
     
-    fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
+    fig.savefig(f'{plot_filename}', dpi=400)
     #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
   
 def get_values_from_pv(start_date, end_date, url, path, key):
@@ -392,26 +391,20 @@ def get_values_from_pv(start_date, end_date, url, path, key):
     for item in kwh_data:
         line_item = item.split(';')
         print ("line_item", line_item)
-        if len(line_item) == 1:
-            break
-        datum      = line_item[0]
-        wr_gesamt  = line_item[1]
-        if len(line_item) == 5: #falls anlage mike, alles WR um 1 verschoben
-            wr1        = line_item[3] 
+        if 4 <= len(line_item) <=6 :
+            datum      = line_item[0]
+            wr_gesamt  = line_item[1]
+            wr1        = line_item[3]
             wr2        = line_item[4]
-        else:
-            wr1        = line_item[2] 
-            wr2        = line_item[3]
-        try:
-            wr3    = line_item[4]
-            wr4    = line_item[5]
-            value_dict = { datum: [wr_gesamt, wr1, wr2, wr3, wr4] }
-        except:
-            value_dict = { datum: [wr_gesamt, wr1, wr2] }
+            try:
+                wr3    = line_item[5]
+                wr4    = line_item[6]
+                value_dict = { datum: [wr_gesamt, wr1, wr2, wr3, wr4] }
+            except:
+                value_dict = { datum: [wr_gesamt, wr1, wr2] }
 
-        #value_dict = { datum: [wr_gesamt, wr1, wr2] }
-        print ("value_dict: ", value_dict)
-        values.update(value_dict)
+            #value_dict = { datum: [wr_gesamt, wr1, wr2] }
+            values.update(value_dict)
     
     #writing data to database
     with shelve.open(path) as db:
