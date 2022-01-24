@@ -264,10 +264,10 @@ def make_graph(year, path, plot_filename, colors, warning):
 
     ax3.set_facecolor(colors['background-color'])
     ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
-    ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=2)
+    ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
     try:
-        ax3.bar(df_wr['Datum'], df_wr['WR1'], bottom=df_wr['WR2'], color=color_wr[2], label='kWh', linewidth=4.0, zorder=2)
-        ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR3'], color=color_wr[3], label='kWh', linewidth=4.0, zorder=2)
+        ax3.bar(df_wr['Datum'], df_wr['WR3'], bottom=(df_wr['WR1'] +df_wr['WR2']), color=color_wr[2], label='kWh', linewidth=4.0, zorder=4)
+        ax3.bar(df_wr['Datum'], df_wr['WR4'], bottom=(df_wr['WR1'] +df_wr['WR2']+ df_wr['WR3']), color=color_wr[3], label='kWh', linewidth=4.0, zorder=5)
     except:
         pass
     ax3.set_xticks(df_wr['Datum'])
