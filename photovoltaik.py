@@ -15,10 +15,11 @@ import smtplib, ssl
 from email.mime.text import MIMEText
 #set environment variables B2_KEY_ID and B2_APPLICATION_KEY
 from telegram.ext import Updater
+import socket
 
 global bucketname
 bucketname = 'photovoltaik'
-
+hostname = socket.gethostname()
 
 today     = datetime.date.today()
 today     = today.strftime("%d.%m.%Y")
@@ -121,15 +122,19 @@ def start_workflow(key, value, years):
            get_values_from_pv(start_date, end_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
-    
-        upload_plot(plot_filename)     
 
-    upload_plot(plotlast7days)
-    upload_plot(plotwr)
-    
-    if history_flag == 1:
-        html(value['plotname'], years)
-        upload_html(html_out_filename)
+        if 'rasp' in hostname:
+            upload_plot(plot_filename)  
+         
+
+    if 'rasp' in hostname:
+        #upload only on raspberry
+        upload_plot(plotlast7days)
+        upload_plot(plotwr)
+        
+        if history_flag == 1:
+            html(value['plotname'], years)
+            upload_html(html_out_filename)    
 
 def get_date(url, path):
     #read max date from shelve db
@@ -242,6 +247,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     
     #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
+    fig.tight_layout()
     fig.savefig(f'{plotlast7days}', dpi=400, facecolor=colors['background-color'])
 
     #### END END END last 7 days END END END #####
@@ -278,6 +284,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax3.spines['bottom'].set_linestyle('-.')
     #plt.show() 
     plotwr = plot_filename.split('_')[0]+'_wr.png'
+    fig1.tight_layout()
     fig1.savefig(f'{plotwr}', dpi=400, facecolor=colors['background-color'])
 
     #### END END END Wechselrichter END END END #####
@@ -363,10 +370,9 @@ def make_graph(year, path, plot_filename, colors, warning):
     )
 
     #plt.show()
-    
+    fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
-    #savefig(f'{plot_filename}', facecolor=fig.get_facecolor(), transparent=True)
-  
+      
 def get_values_from_pv(start_date, end_date, url, path, key):
     global last_values_pv
     headers={}
