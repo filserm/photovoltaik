@@ -193,7 +193,7 @@ def make_graph(year, path, plot_filename, colors, warning):
         df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4]
         datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
-        if i==100: break
+        #if i==100: break
     
     #### last 7 days #####
     mask = (df['Tag'] >= jan_01_current_year) & (df['Tag'] <= yesterday_diff_fmt)
