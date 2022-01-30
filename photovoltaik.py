@@ -225,7 +225,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax1.plot(df_last7days['Datum'], df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
     #ax1.set_xticks(df_last7days.index)
     ax1.set_xticks(df_last7days['Datum'])
-    ax1.tick_params(labelcolor='white',labelsize='xx-large', width=3, labelright='true')
+    ax1.tick_params(labelcolor='white',labelsize=22, width=3, labelright='true')
     ax1.set_ylim(0, max_value_7days + 50)
     ax1.grid(True, linestyle='-.', color=colors['text-color']) 
     ax1.spines['bottom'].set_color(colors['text-color'])
@@ -277,7 +277,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     except:
         pass
     ax3.set_xticks(df_wr['Datum'])
-    ax3.tick_params(labelcolor=text_color_wr,labelsize='xx-large', width=3, labelright='true')
+    ax3.tick_params(labelcolor=text_color_wr,labelsize=22, width=3, labelright='true')
     #ax3.set_ylim(0, max_value_7days + 50)
     ax3.grid(True, linestyle='-.', color=text_color_wr) 
     ax3.spines['bottom'].set_color(text_color_wr)
