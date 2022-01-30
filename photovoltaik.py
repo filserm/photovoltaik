@@ -332,9 +332,9 @@ def make_graph(year, path, plot_filename, colors, warning):
     name = plot_filename.split('_')
     ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
 
-    ax.plot(df_mean['Monat'], df_mean['haus_sum_monatabs'], '_', mew=3, ms=68, color='orange', label='Durchschnittswerte', zorder=2)
-    ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=68, color='green', label='Max Werte', zorder = 3)
-    ax.plot(df_min['Monat'], df_min['haus_min_monat'],      '_', mew=3, ms=68, color='red' ,   label='Min Werte', zorder = 3)
+    ax.plot(df_mean['Monat'], df_mean['haus_sum_monatabs'], '_', mew=3, ms=85, color='orange', label='Durchschnittswerte', zorder=2)
+    ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=85, color='green', label='Max Werte', zorder = 3)
+    ax.plot(df_min['Monat'], df_min['haus_min_monat'],      '_', mew=3, ms=85, color='red' ,   label='Min Werte', zorder = 3)
     ax2 = ax.twinx()
     ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', color=f'xkcd:{colors["bar-color"]}', zorder=1)
     ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
