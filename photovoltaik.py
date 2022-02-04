@@ -330,7 +330,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax.set_facecolor(colors['background-color'])
     
     name = plot_filename.split('_')
-    ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
+    ax.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh für das Jahr {year}', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
     ax.plot(df_mean['Monat'], df_mean['haus_sum_monatabs'], '_', mew=3, ms=85, color='orange', label='Durchschnittswerte', zorder=2)
     ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=85, color='green', label='Max Werte', zorder = 3)
@@ -358,7 +358,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax.xaxis.grid(False)
 
     for p in ax2.patches:
-        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
+        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=32)
 
     ypos = max_value * 0.7
     ax.text(10.5, ypos, f'{kum_value}\nJahresertrag kummuliert', ha='center', color='white', size=20, rotation=-25., style='italic',
