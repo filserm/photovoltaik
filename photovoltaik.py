@@ -266,7 +266,7 @@ def make_graph(year, path, plot_filename, colors, warning):
 
     fig1, ax3 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
     
-    ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
+    #ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
     ax3.set_facecolor(colors['background-color'])
     ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
