@@ -372,7 +372,6 @@ def make_graph(year, path, plot_filename, colors, warning):
     #plt.show()
     fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
-    exit()
 
 def get_values_from_pv(start_date, end_date, url, path, key):
     global last_values_pv
