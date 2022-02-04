@@ -358,10 +358,10 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax.xaxis.grid(False)
 
     for p in ax2.patches:
-        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=32)
+        ax.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 20), textcoords='offset points', color=colors['text-color'] ,fontsize=32, style='oblique')
 
     ypos = max_value * 0.7
-    ax.text(10.5, ypos, f'{kum_value}\nJahresertrag kummuliert', ha='center', color='white', size=20, rotation=-25., style='italic',
+    ax.text(10.5, ypos, f'{kum_value}\nJahresertrag kummuliert', ha='center', color='white', size=32, rotation=-25., style='italic',
                 bbox=dict(boxstyle="round, pad=1",
                           fc='fuchsia',
                           ec='lightgrey',
@@ -372,7 +372,8 @@ def make_graph(year, path, plot_filename, colors, warning):
     #plt.show()
     fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
-      
+    exit()
+
 def get_values_from_pv(start_date, end_date, url, path, key):
     global last_values_pv
     headers={}
