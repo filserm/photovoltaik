@@ -218,7 +218,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     print ("background: ", colors['background-color'])
     fig, ax1 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
     
-    ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
+    ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
     ax1.set_facecolor(colors['background-color'])
     #ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
@@ -243,7 +243,7 @@ def make_graph(year, path, plot_filename, colors, warning):
 
     for i in range(len(df_last7days)):
         #print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
-        plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=20)
+        plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=32)
     
     #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
@@ -266,7 +266,7 @@ def make_graph(year, path, plot_filename, colors, warning):
 
     fig1, ax3 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
     
-    ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 28, 'fontweight': 'medium', 'color':colors['text-color']})
+    ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
     ax3.set_facecolor(colors['background-color'])
     ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
@@ -372,10 +372,14 @@ def make_graph(year, path, plot_filename, colors, warning):
     #plt.show()
     fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
-    
+    exit()
+
 def get_values_from_pv(start_date, end_date, url, path, key):
     global last_values_pv
     headers={}
+
+    if start_date == yesterday:
+        return
 
     data = {
     'aggregate': 'day',
