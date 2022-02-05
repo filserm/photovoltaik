@@ -118,8 +118,8 @@ def start_workflow(key, value, years):
         path            = os.path.join(os.path.expanduser(dir), db)     
 
         if int(year) == int(current_year):
-           start_date, end_date = get_date(url, path)
-           get_values_from_pv(start_date, end_date, url, path, key)
+           start_date, end_date, last_date = get_date(url, path)
+           get_values_from_pv(start_date, end_date, last_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
 
@@ -159,7 +159,7 @@ def get_date(url, path):
         end_date = yesterday
 
     print (f'getting values for {start_date} - {end_date}')
-    return start_date, end_date
+    return start_date, end_date, last_date
 
 def make_graph(year, path, plot_filename, colors, warning):
     global plotlast7days, plotwr, max_value_this_year_dict
@@ -373,11 +373,11 @@ def make_graph(year, path, plot_filename, colors, warning):
     fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
 
-def get_values_from_pv(start_date, end_date, url, path, key):
+def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     global last_values_pv
     headers={}
 
-    if start_date == yesterday:
+    if last_date == yesterday:
         return
 
     data = {
