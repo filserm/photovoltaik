@@ -295,15 +295,15 @@ def make_graph(year, path, plot_filename, colors, warning):
     #ax3.tick_params(labelcolor=text_color_wr,labelsize=22, width=3, labelright='true')
     #ax3.set_ylim(0, max_value_7days + 50)
 
-    ax3.tick_params(
-        axis='y',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom=True,      # ticks along the bottom edge are off
-        top=True,         # ticks along the top edge are off
-        labelbottom=True,
-        labelsize=22,
-        labelcolor='white'
-    ) # labels along the bottom edge are off
+    # ax3.tick_params(
+    #     axis='y',          # changes apply to the x-axis
+    #     which='both',      # both major and minor ticks are affected
+    #     bottom=True,      # ticks along the bottom edge are off
+    #     top=True,         # ticks along the top edge are off
+    #     labelbottom=True,
+    #     labelsize=22,
+    #     labelcolor='white'
+    # ) 
 
     ax3.grid(True, linestyle='-.', color=text_color_wr) 
     ax3.spines['bottom'].set_color(text_color_wr)
