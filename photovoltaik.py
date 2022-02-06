@@ -188,8 +188,8 @@ def make_graph(year, path, plot_filename, colors, warning):
             wr3    = int(item[3])
             wr4    = int(item[4])
         except:
-            wr3 = 0
-            wr4 = 0
+            wr3 = -1
+            wr4 = -1
         df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4]
         #datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
@@ -269,16 +269,42 @@ def make_graph(year, path, plot_filename, colors, warning):
     #ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
     ax3.set_facecolor(colors['background-color'])
-    ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
-    ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
-    try:
-        ax3.bar(df_wr['Datum'], df_wr['WR3'], bottom=(df_wr['WR1'] +df_wr['WR2']), color=color_wr[2], label='kWh', linewidth=4.0, zorder=4)
-        ax3.bar(df_wr['Datum'], df_wr['WR4'], bottom=(df_wr['WR1'] +df_wr['WR2']+ df_wr['WR3']), color=color_wr[3], label='kWh', linewidth=4.0, zorder=5)
-    except:
-        pass
-    ax3.set_xticks(df_wr['Datum'])
-    ax3.tick_params(labelcolor=text_color_wr,labelsize=22, width=3, labelright='true')
+
+    ##stacked bar chart
+    #ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
+    #ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
+    # try:
+    #     ax3.bar(df_wr['Datum'], df_wr['WR3'], bottom=(df_wr['WR1'] +df_wr['WR2']), color=color_wr[2], label='kWh', linewidth=4.0, zorder=4)
+    #     ax3.bar(df_wr['Datum'], df_wr['WR4'], bottom=(df_wr['WR1'] +df_wr['WR2']+ df_wr['WR3']), color=color_wr[3], label='kWh', linewidth=4.0, zorder=5)
+    # except:
+    #     pass
+
+    ## multiple bar chart 
+    X_axis = np.arange(len(df_wr['Datum']))
+    if df_wr.iloc[0][8] == -1:  # dann WR3 nicht vorhanden
+        ax3.bar(X_axis-0.2, df_wr['WR1'],width=0.4, color=color_wr[0], label='kWh')
+        ax3.bar(X_axis+0.2, df_wr['WR2'],width=0.4, color=color_wr[1], label='kWh') 
+    else:
+        ax3.bar(X_axis-0.3, df_wr['WR1'],width=0.2, color=color_wr[0], label='kWh', linewidth=4.0)
+        ax3.bar(X_axis-0.1, df_wr['WR2'],width=0.2, color=color_wr[1], label='kWh', linewidth=4.0)
+        ax3.bar(X_axis+0.1, df_wr['WR3'],width=0.2, color=color_wr[2], label='kWh', linewidth=4.0)
+        ax3.bar(X_axis+0.3, df_wr['WR4'],width=0.2, color=color_wr[3], label='kWh', linewidth=4.0)
+
+    #ax3.set_xticks(df_wr['Datum'])
+    #plt.xticks(X_axis, df_wr['Datum'])
+    #ax3.tick_params(labelcolor=text_color_wr,labelsize=22, width=3, labelright='true')
     #ax3.set_ylim(0, max_value_7days + 50)
+
+    ax3.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom=True,      # ticks along the bottom edge are off
+        top=True,         # ticks along the top edge are off
+        labelbottom=True,
+        labelsize=22,
+        labelcolor='white'
+    ) # labels along the bottom edge are off
+
     ax3.grid(True, linestyle='-.', color=text_color_wr) 
     ax3.spines['bottom'].set_color(text_color_wr)
     ax3.spines['bottom'].set_linestyle('-.')
@@ -288,8 +314,6 @@ def make_graph(year, path, plot_filename, colors, warning):
     fig1.savefig(f'{plotwr}', dpi=400, facecolor=colors['background-color'])
 
     #### END END END Wechselrichter END END END #####
-
-
 
     datafile.close()
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
@@ -372,6 +396,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     #plt.show()
     fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
+    
 
 def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     global last_values_pv
