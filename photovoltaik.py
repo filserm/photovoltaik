@@ -6,6 +6,7 @@ import shelve
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
+from matplotlib.dates import DateFormatter
 import pandas as pd
 import numpy as np
 import calendar
@@ -119,7 +120,7 @@ def start_workflow(key, value, years):
 
         if int(year) == int(current_year):
            start_date, end_date, last_date = get_date(url, path)
-           get_values_from_pv(start_date, end_date, last_date, url, path, key)
+           #get_values_from_pv(start_date, end_date, last_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
 
@@ -171,7 +172,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     datafile = open(filename, 'w')
     datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\tWR3\tWR4\n')
     
-    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2', 'WR3', 'WR4'))
+    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2', 'WR3', 'WR4', 'WR1_1', 'WR2_1', 'WR3_1', 'WR4_1'))
     #idx = pd.date_range('01-01-2011', '12-31-2020')
     i=0
     for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
@@ -184,13 +185,19 @@ def make_graph(year, path, plot_filename, colors, warning):
         #hausgesamt_anz= str(hausgesamt).replace('.','')
         wr1        = int(item[1])
         wr2        = int(item[2])
+        wr1_1      = int(item[1]) / 1000
+        wr2_1      = int(item[2]) / 1000
         try:
             wr3    = int(item[3])
             wr4    = int(item[4])
+            wr3_1  = int(item[3]) / 1000
+            wr4_1  = int(item[4]) / 1000
         except:
             wr3 = -1
             wr4 = -1
-        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4]
+            wr3_1 = -1
+            wr4_1 = -1
+        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4, wr1_1, wr2_1, wr3_1, wr4_1]
         #datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
         #if i==100: break
@@ -215,25 +222,49 @@ def make_graph(year, path, plot_filename, colors, warning):
     else:
         color_7day = 'green'
 
-    print ("background: ", colors['background-color'])
-    fig, ax1 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
-    
+    print (df_last7days)
+   
+    fig, ax1 = plt.subplots(figsize=(30, 12), facecolor=colors['background-color'])
     ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
+    X_axis = np.arange(len(df_last7days['Datum']))
+
     ax1.set_facecolor(colors['background-color'])
-    #ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
-    ax1.plot(df_last7days['Datum'], df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
-    #ax1.set_xticks(df_last7days.index)
-    ax1.set_xticks(df_last7days['Datum'])
+
+    # Ertrag Line chart
+    #ax1.plot(X_axis, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
+    
+    print (df_last7days['Datum'].all())
+    # Ertrag pro Wechselrichter
+    color_wr = ["#006D2C", "#31A354","#74C476", "#a5f2a7"]
+    print (df_last7days.iloc[0][8])
+    if df_last7days.iloc[0][8] == -1:  # dann WR3 nicht vorhanden
+        ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.2, color=color_wr[0], label='kWh')
+        ax1.bar(X_axis-0.1, df_last7days['WR2_1'],width=0.2, color=color_wr[1], label='kWh') 
+        ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color='orange', label='kWh') 
+    
+    else:
+        ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.1, color=color_wr[0], label='kWh', linewidth=4.0)
+        ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.1, color=color_wr[1], label='kWh', linewidth=4.0)
+        ax1.bar(X_axis-0.1, df_last7days['WR3_1'],width=0.1, color=color_wr[2], label='kWh', linewidth=4.0)
+        ax1.bar(X_axis+0, df_last7days['WR4_1'],width=0.1, color=color_wr[3], label='kWh', linewidth=4.0)
+        ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color='orange', label='kWh') 
+
+
+    ax1.set_xticks(X_axis)
+    ax1.set_xticklabels([x.strftime("%Y-%m-%d") for x in df_last7days['Datum']], fontsize=28)
+
     ax1.tick_params(labelcolor='white',labelsize=22, width=3, labelright='true')
-    ax1.set_ylim(0, max_value_7days + 50)
+
+    ax1.set_ylim(0, max_value_7days + 10)
+    plt.yticks(np.arange(0, max_value_7days+10, 10))
     ax1.grid(True, linestyle='-.', color=colors['text-color']) 
     ax1.spines['bottom'].set_color(colors['text-color'])
     ax1.spines['bottom'].set_linestyle('-.')
-    #for p in ax1.patches:
-    #    ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
+    for p in ax1.patches:
+        ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=28)
 
-    plt.text(1, 0.9, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
+    plt.text(0.9, 0.8, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
                 bbox=dict(boxstyle="round, pad=1",
                           fc=color_7day,
                           ec='lightgrey',
@@ -241,15 +272,19 @@ def make_graph(year, path, plot_filename, colors, warning):
                    )
     )
 
-    for i in range(len(df_last7days)):
-        #print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
-        plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=32)
+    #for i in range(len(df_last7days)):
+    #    #print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
+    #    plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=32)
     
-    #plt.show()    
+    # Define the date format
+    #date_form = DateFormatter("%m-%d")
+    #ax1.xaxis.set_major_formatter(date_form)
+    #ax1.xaxis.set_major_locator(df_last7days['Datum'].WeekdayLocator(interval=1))
+
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
     fig.tight_layout()
     fig.savefig(f'{plotlast7days}', dpi=400, facecolor=colors['background-color'])
-
+    
     #### END END END last 7 days END END END #####
 
 
