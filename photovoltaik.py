@@ -69,7 +69,7 @@ anlagen = {
                         'db'               : 'mike_raw_data.db'  ,
                         'colors'           : {
                                                 'background-color': '#121212', 
-                                                'bar-color'       : 'azure',
+                                                'bar-color'       : '#0057de',
                                                 'text-color'      : 'ivory'
                                              },
                         'warning'           : 50,
@@ -81,7 +81,7 @@ anlagen = {
                        'db'               : 'halle_raw_data.db'  ,
                        'colors'           : {
                                                'background-color': '#121212', 
-                                               'bar-color'       : 'aqua',
+                                               'bar-color'       : '#13eac9',
                                                'text-color'      : 'ivory'
                                             },
                        'warning'           : 100,
@@ -120,7 +120,7 @@ def start_workflow(key, value, years):
 
         if int(year) == int(current_year):
            start_date, end_date, last_date = get_date(url, path)
-           #get_values_from_pv(start_date, end_date, last_date, url, path, key)
+           get_values_from_pv(start_date, end_date, last_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
 
@@ -238,17 +238,25 @@ def make_graph(year, path, plot_filename, colors, warning):
     # Ertrag pro Wechselrichter
     color_wr = ["#006D2C", "#31A354","#74C476", "#a5f2a7"]
     print (df_last7days.iloc[0][8])
+    print (f'farbe: {colors["bar-color"]}')
     if df_last7days.iloc[0][8] == -1:  # dann WR3 nicht vorhanden
-        ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.2, color=color_wr[0], label='kWh')
-        ax1.bar(X_axis-0.1, df_last7days['WR2_1'],width=0.2, color=color_wr[1], label='kWh') 
-        ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color='orange', label='kWh') 
+
+        ##stacked bar chart
+        ax1.bar(X_axis-0.2, df_last7days['WR1_1'], width=0.4, color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
+        ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.4, bottom=df_last7days['WR1_1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
+        ax1.bar(X_axis+0.2, df_last7days['HausGesamt'],width=0.4, color=f'{colors["bar-color"]}', label='kWh')
+
+        ##multiple bar chart
+        #ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.2, color=color_wr[0], label='kWh')
+        #ax1.bar(X_axis-0.1, df_last7days['WR2_1'],width=0.2, color=color_wr[1], label='kWh') 
+        #ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color=f'{colors["bar-color"]}', label='kWh') 
     
     else:
         ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.1, color=color_wr[0], label='kWh', linewidth=4.0)
         ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.1, color=color_wr[1], label='kWh', linewidth=4.0)
         ax1.bar(X_axis-0.1, df_last7days['WR3_1'],width=0.1, color=color_wr[2], label='kWh', linewidth=4.0)
         ax1.bar(X_axis+0, df_last7days['WR4_1'],width=0.1, color=color_wr[3], label='kWh', linewidth=4.0)
-        ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color='orange', label='kWh') 
+        ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color=f'{colors["bar-color"]}', label='kWh') 
 
 
     ax1.set_xticks(X_axis)
@@ -262,9 +270,9 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax1.spines['bottom'].set_color(colors['text-color'])
     ax1.spines['bottom'].set_linestyle('-.')
     for p in ax1.patches:
-        ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=28)
+        ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(-5, -25), textcoords='offset points', color=colors['text-color'] ,fontsize=28, weight='bold')
 
-    plt.text(0.9, 0.8, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
+    plt.text(0.9, 0.8, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=40, style='italic', transform=ax1.transAxes,
                 bbox=dict(boxstyle="round, pad=1",
                           fc=color_7day,
                           ec='lightgrey',
@@ -395,7 +403,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax.plot(df_max['Monat'], df_max['haus_max_monat'],      '_', mew=3, ms=85, color='green', label='Max Werte', zorder = 3)
     ax.plot(df_min['Monat'], df_min['haus_min_monat'],      '_', mew=3, ms=85, color='red' ,   label='Min Werte', zorder = 3)
     ax2 = ax.twinx()
-    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', color=f'xkcd:{colors["bar-color"]}', zorder=1)
+    ax2.bar(df['Monat'], df['haus_sum_monatabs'],label='Monatssumme', color=f'{colors["bar-color"]}', zorder=1)
     ax.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12])
     ax.set_xticklabels(['Jan', 'Feb', 'Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'])
     #ax.set_yticklabels(rotation=0, fontsize=18)
@@ -448,7 +456,21 @@ def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     'end_time': '00:00'
     }
 
-    response = requests.post(url,headers=headers, data=data, allow_redirects=False)
+    #try it 10 times
+    for i in range(1,10):
+        try: 
+            print (f'try - {i} ...') 
+            response = requests.get(url,headers=headers, data=data, allow_redirects=False,verify=False, timeout=360)
+            print (response.text)
+            if 'Yield' in response.text:
+                break
+            else:
+                print ("sleep 120 sec")
+                time.sleep(120)
+        except Exception as e:
+            print ("sleep 120 sec", e)
+            time.sleep(120)
+            next
 
     for k, v in response.__dict__.items():
         if k == '_content':
@@ -522,14 +544,36 @@ def upload_plot(plot_filename):
     b2 = B2()
     bucket = b2.buckets.get(bucketname)
     plot_file = open(plot_filename, 'rb')
-    bucket.files.upload(contents=plot_file, file_name=plot_filename)
+    #bucket.files.upload(contents=plot_file, file_name=plot_filename)
+    #try it 10 times
+    for i in range(1,10):
+        try: 
+            print (f'try - {i} ...') 
+            rc = bucket.files.upload(contents=plot_file, file_name=plot_filename)
+            if 'backblaze' in rc.url:
+                break
+        except Exception as e:
+            print ("sleep 120 sec", e)
+            time.sleep(120)
+            next
 
 def upload_html_b2(html_out_filename):    
     b2 = B2()
     bucket = b2.buckets.get(bucketname)
 
     html_file = open(html_out_filename, 'rb')
-    bucket.files.upload(contents=html_file, file_name=html_out_filename)
+    #bucket.files.upload(contents=html_file, file_name=html_out_filename)
+    #try it 10 times
+    for i in range(1,10):
+        try: 
+            print (f'try - {i} ...') 
+            rc = bucket.files.upload(contents=html_file, file_name=html_out_filename)
+            if 'backblaze' in rc.url:
+                break
+        except Exception as e:
+            print ("sleep 120 sec", e)
+            time.sleep(120)
+            next
     
 
 def html(plotname, years):
