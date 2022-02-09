@@ -137,6 +137,7 @@ def start_workflow(key, value, years):
             upload_html(html_out_filename)    
 
 def get_date(url, path):
+    last_date = ''
     #read max date from shelve db
     try:
         pv_data = shelve.open(path)
