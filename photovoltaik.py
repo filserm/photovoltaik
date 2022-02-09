@@ -413,7 +413,21 @@ def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     'end_time': '00:00'
     }
 
-    response = requests.post(url,headers=headers, data=data, allow_redirects=False)
+    #try it 10 times
+    for i in range(1,10):
+        try: 
+            print (f'try - {i} ...') 
+            response = requests.get(url,headers=headers, data=data, allow_redirects=False,verify=False, timeout=360)
+            print (response.text)
+            if 'Yield' in response.text:
+                break
+            else:
+                print ("sleep 120 sec")
+                time.sleep(120)
+        except Exception as e:
+            print ("sleep 120 sec", e)
+            time.sleep(120)
+            next
 
     for k, v in response.__dict__.items():
         if k == '_content':
@@ -487,15 +501,36 @@ def upload_plot(plot_filename):
     b2 = B2()
     bucket = b2.buckets.get(bucketname)
     plot_file = open(plot_filename, 'rb')
-    bucket.files.upload(contents=plot_file, file_name=plot_filename)
+    #bucket.files.upload(contents=plot_file, file_name=plot_filename)
+    #try it 10 times
+    for i in range(1,10):
+        try: 
+            print (f'try - {i} ...') 
+            rc = bucket.files.upload(contents=plot_file, file_name=plot_filename)
+            if 'backblaze' in rc.url:
+                break
+        except Exception as e:
+            print ("sleep 120 sec", e)
+            time.sleep(120)
+            next
 
 def upload_html_b2(html_out_filename):    
     b2 = B2()
     bucket = b2.buckets.get(bucketname)
 
     html_file = open(html_out_filename, 'rb')
-    bucket.files.upload(contents=html_file, file_name=html_out_filename)
-    
+    #bucket.files.upload(contents=html_file, file_name=html_out_filename)
+    #try it 10 times
+    for i in range(1,10):
+        try: 
+            print (f'try - {i} ...') 
+            rc = bucket.files.upload(contents=html_file, file_name=html_out_filename)
+            if 'backblaze' in rc.url:
+                break
+        except Exception as e:
+            print ("sleep 120 sec", e)
+            time.sleep(120)
+            next
 
 def html(plotname, years):
     jahre = years[:]
