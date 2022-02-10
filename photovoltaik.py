@@ -103,12 +103,12 @@ def main(years):
 def vpn(switch):
     if switch == 'on':
         #os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
-        os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+        os.system('sudo vpnc-disconnect')    #VPN disconnect
         #try it 10 times
         for i in range(1,20):
             try: 
                 print (f'try - {i} ...') 
-                os.system('sudo vpnc-disconnect')    #VPN disconnect            
+                os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect            
             except Exception as e:
                 print ("sleep 120 sec", e)
                 time.sleep(120)
