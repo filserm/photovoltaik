@@ -108,7 +108,9 @@ def vpn(switch):
         for i in range(1,20):
             try: 
                 print (f'try - {i} ...') 
-                os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect            
+                rc = os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect 
+                if 'VPNC started' in rc:
+                    break           
             except Exception as e:
                 print ("sleep 120 sec", e)
                 time.sleep(120)
