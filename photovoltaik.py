@@ -6,7 +6,6 @@ import shelve
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
-from matplotlib.dates import DateFormatter
 import pandas as pd
 import numpy as np
 import calendar
@@ -64,18 +63,18 @@ last_values_pv = {}
 max_value_this_year_dict = {}
 
 anlagen = {
-            'mike' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
-                        'plotname'         : 'mike_pv_'  ,
-                        'db'               : 'mike_raw_data.db'  ,
-                        'colors'           : {
-                                                'background-color': '#121212', 
-                                                'bar-color'       : '#0057de',
-                                                'text-color'      : 'ivory'
-                                             },
-                        'warning'           : 50,
-                        'limit_wechselrichter': 5000,
-            }
-            ,
+            # 'mike' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
+            #             'plotname'         : 'mike_pv_'  ,
+            #             'db'               : 'mike_raw_data.db'  ,
+            #             'colors'           : {
+            #                                     'background-color': '#121212', 
+            #                                     'bar-color'       : '#0072c5',
+            #                                     'text-color'      : 'ivory'
+            #                                  },
+            #             'warning'           : 50,
+            #             'limit_wechselrichter': 5000,
+            # }
+            # ,
             'halle' : { 'url'              : 'http://192.168.178.199/cgi-bin/download.csv/',
                        'plotname'         : 'halle_pv_'  ,
                        'db'               : 'halle_raw_data.db'  ,
@@ -103,9 +102,21 @@ def main(years):
 
 def vpn(switch):
     if switch == 'on':
-        os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+        #os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+        #try it 10 times
+        for i in range(1,20):
+            try: 
+                print (f'try - {i} ...') 
+                os.system('sudo vpnc-disconnect')    #VPN disconnect            
+                os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+            except Exception as e:
+                print ("sleep 120 sec", e)
+                time.sleep(120)
+                next
+    
     elif switch == 'off':
         os.system('sudo vpnc-disconnect')    #VPN disconnect
+    
 
 def start_workflow(key, value, years):
     
@@ -120,7 +131,7 @@ def start_workflow(key, value, years):
 
         if int(year) == int(current_year):
            start_date, end_date, last_date = get_date(url, path)
-           get_values_from_pv(start_date, end_date, last_date, url, path, key)
+           #get_values_from_pv(start_date, end_date, last_date, url, path, key)
 
         make_graph(year, path, plot_filename, colors, warning)
 
@@ -138,6 +149,7 @@ def start_workflow(key, value, years):
             upload_html(html_out_filename)    
 
 def get_date(url, path):
+    last_date = ''
     #read max date from shelve db
     try:
         pv_data = shelve.open(path)
@@ -252,11 +264,20 @@ def make_graph(year, path, plot_filename, colors, warning):
         #ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color=f'{colors["bar-color"]}', label='kWh') 
     
     else:
-        ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.1, color=color_wr[0], label='kWh', linewidth=4.0)
-        ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.1, color=color_wr[1], label='kWh', linewidth=4.0)
-        ax1.bar(X_axis-0.1, df_last7days['WR3_1'],width=0.1, color=color_wr[2], label='kWh', linewidth=4.0)
-        ax1.bar(X_axis+0, df_last7days['WR4_1'],width=0.1, color=color_wr[3], label='kWh', linewidth=4.0)
-        ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color=f'{colors["bar-color"]}', label='kWh') 
+        #stacked bar chart
+        ax1.bar(X_axis-0.2, df_last7days['WR1_1'], width=0.4, color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
+        ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.4, bottom=df_last7days['WR1_1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
+        ax1.bar(X_axis-0.2, df_last7days['WR3_1'], width=0.4, bottom=(df_last7days['WR1_1']+ df_last7days['WR2_1']), color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
+        ax1.bar(X_axis-0.2, df_last7days['WR4_1'],width=0.4, bottom=(df_last7days['WR1_1']+ df_last7days['WR2_1']+ df_last7days['WR3_1']), color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
+        
+        ax1.bar(X_axis+0.2, df_last7days['HausGesamt'],width=0.4, color=f'{colors["bar-color"]}', label='kWh')
+
+        #multiple bar chart
+        # ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.1, color=color_wr[0], label='kWh', linewidth=4.0)
+        # ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.1, color=color_wr[1], label='kWh', linewidth=4.0)
+        # ax1.bar(X_axis-0.1, df_last7days['WR3_1'],width=0.1, color=color_wr[2], label='kWh', linewidth=4.0)
+        # ax1.bar(X_axis+0, df_last7days['WR4_1'],width=0.1, color=color_wr[3], label='kWh', linewidth=4.0)
+        # ax1.bar(X_axis+0.1, df_last7days['HausGesamt'],width=0.2, color=f'{colors["bar-color"]}', label='kWh') 
 
 
     ax1.set_xticks(X_axis)
@@ -270,7 +291,8 @@ def make_graph(year, path, plot_filename, colors, warning):
     ax1.spines['bottom'].set_color(colors['text-color'])
     ax1.spines['bottom'].set_linestyle('-.')
     for p in ax1.patches:
-        ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(-5, -25), textcoords='offset points', color=colors['text-color'] ,fontsize=28, weight='bold')
+        #ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(-5, -25), textcoords='offset points', color=colors['text-color'] ,fontsize=28, weight='bold')
+        ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height() ), ha='center', va='center', xytext=(-5, 0), textcoords='offset points', color=colors['text-color'] ,fontsize=40, weight='bold')
 
     plt.text(0.9, 0.8, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=40, style='italic', transform=ax1.transAxes,
                 bbox=dict(boxstyle="round, pad=1",
@@ -439,7 +461,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     #plt.show()
     fig.tight_layout()
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
-    
+    #exit()
 
 def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     global last_values_pv
@@ -460,7 +482,7 @@ def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     for i in range(1,10):
         try: 
             print (f'try - {i} ...') 
-            response = requests.get(url,headers=headers, data=data, allow_redirects=False,verify=False, timeout=360)
+            response = requests.post(url,headers=headers, data=data, allow_redirects=False,verify=False, timeout=360)
             print (response.text)
             if 'Yield' in response.text:
                 break
@@ -574,7 +596,6 @@ def upload_html_b2(html_out_filename):
             print ("sleep 120 sec", e)
             time.sleep(120)
             next
-    
 
 def html(plotname, years):
     jahre = years[:]
