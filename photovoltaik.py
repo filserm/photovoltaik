@@ -63,18 +63,18 @@ last_values_pv = {}
 max_value_this_year_dict = {}
 
 anlagen = {
-            # 'mike' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
-            #             'plotname'         : 'mike_pv_'  ,
-            #             'db'               : 'mike_raw_data.db'  ,
-            #             'colors'           : {
-            #                                     'background-color': '#121212', 
-            #                                     'bar-color'       : '#0072c5',
-            #                                     'text-color'      : 'ivory'
-            #                                  },
-            #             'warning'           : 50,
-            #             'limit_wechselrichter': 5000,
-            # }
-            # ,
+            'mike' : { 'url'              : 'http://192.168.178.58/cgi-bin/download.csv/',
+                        'plotname'         : 'mike_pv_'  ,
+                        'db'               : 'mike_raw_data.db'  ,
+                        'colors'           : {
+                                                'background-color': '#121212', 
+                                                'bar-color'       : '#0072c5',
+                                                'text-color'      : 'ivory'
+                                             },
+                        'warning'           : 50,
+                        'limit_wechselrichter': 5000,
+            }
+            ,
             'halle' : { 'url'              : 'http://192.168.178.199/cgi-bin/download.csv/',
                        'plotname'         : 'halle_pv_'  ,
                        'db'               : 'halle_raw_data.db'  ,
@@ -103,12 +103,14 @@ def main(years):
 def vpn(switch):
     if switch == 'on':
         #os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+        os.system('sudo vpnc-disconnect')    #VPN disconnect
         #try it 10 times
         for i in range(1,20):
             try: 
                 print (f'try - {i} ...') 
-                os.system('sudo vpnc-disconnect')    #VPN disconnect            
-                os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+                rc = os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect 
+                if rc == 0:
+                    break           
             except Exception as e:
                 print ("sleep 120 sec", e)
                 time.sleep(120)
@@ -184,7 +186,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     datafile = open(filename, 'w')
     datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\tWR3\tWR4\n')
     
-    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2', 'WR3', 'WR4', 'WR1_1', 'WR2_1', 'WR3_1', 'WR4_1'))
+    df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2', 'WR3', 'WR4', 'WR1_1', 'WR2_1', 'WR3_1', 'WR4_1', 'hausgesamt_1'))
     #idx = pd.date_range('01-01-2011', '12-31-2020')
     i=0
     for k, item in sorted(pv_data.items(), key=lambda x: (datetime.datetime.strptime(x[0][:10], '%d.%m.%Y')), reverse=True):
@@ -193,23 +195,29 @@ def make_graph(year, path, plot_filename, colors, warning):
         monat      = int(k[3:5])
         tag        = str(jahr) + '-' + k[3:5] + '-' + k[0:2]
         #hausgesamt = float(int(item[0])/int(1000))
-        hausgesamt = int(item[0]) / 1000
+        hausgesamt = int(item[0]) / 1000 
+
         #hausgesamt_anz= str(hausgesamt).replace('.','')
         wr1        = int(item[1])
         wr2        = int(item[2])
-        wr1_1      = int(item[1]) / 1000
-        wr2_1      = int(item[2]) / 1000
+        wr1_1      = int(int(item[1]) / 1000)
+        wr2_1      = int(int(item[2]) / 1000)
+        hausgesamt_1 = 0
+        hausgesamt_1 += wr1_1
+        hausgesamt_1 += wr2_1
         try:
             wr3    = int(item[3])
             wr4    = int(item[4])
-            wr3_1  = int(item[3]) / 1000
-            wr4_1  = int(item[4]) / 1000
+            wr3_1  = int(int(item[3]) / 1000)
+            wr4_1  = int(int(item[4]) / 1000)
+            hausgesamt_1 += wr3_1
+            hausgesamt_1 += wr4_1
         except:
             wr3 = -1
             wr4 = -1
             wr3_1 = -1
             wr4_1 = -1
-        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4, wr1_1, wr2_1, wr3_1, wr4_1]
+        df.loc[i] = [k, jahr, monatabs, monat, tag, hausgesamt, wr1,wr2,wr3,wr4, wr1_1, wr2_1, wr3_1, wr4_1, hausgesamt_1]
         #datafile.write(f'{k}\t{jahr}\t{monatabs}\t{monat}\t{tag}\t{hausgesamt}\t{wr1}\t{wr2}\n')
         i+=1
         #if i==100: break
@@ -249,14 +257,13 @@ def make_graph(year, path, plot_filename, colors, warning):
     print (df_last7days['Datum'].all())
     # Ertrag pro Wechselrichter
     color_wr = ["#006D2C", "#31A354","#74C476", "#a5f2a7"]
-    print (df_last7days.iloc[0][8])
-    print (f'farbe: {colors["bar-color"]}')
+
     if df_last7days.iloc[0][8] == -1:  # dann WR3 nicht vorhanden
 
         ##stacked bar chart
         ax1.bar(X_axis-0.2, df_last7days['WR1_1'], width=0.4, color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
         ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.4, bottom=df_last7days['WR1_1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
-        ax1.bar(X_axis+0.2, df_last7days['HausGesamt'],width=0.4, color=f'{colors["bar-color"]}', label='kWh')
+        ax1.bar(X_axis+0.2, df_last7days['hausgesamt_1'],width=0.4, color=f'{colors["bar-color"]}', label='kWh')
 
         ##multiple bar chart
         #ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.2, color=color_wr[0], label='kWh')
@@ -267,10 +274,10 @@ def make_graph(year, path, plot_filename, colors, warning):
         #stacked bar chart
         ax1.bar(X_axis-0.2, df_last7days['WR1_1'], width=0.4, color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
         ax1.bar(X_axis-0.2, df_last7days['WR2_1'],width=0.4, bottom=df_last7days['WR1_1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
-        ax1.bar(X_axis-0.2, df_last7days['WR3_1'], width=0.4, bottom=(df_last7days['WR1_1']+ df_last7days['WR2_1']), color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
-        ax1.bar(X_axis-0.2, df_last7days['WR4_1'],width=0.4, bottom=(df_last7days['WR1_1']+ df_last7days['WR2_1']+ df_last7days['WR3_1']), color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
+        ax1.bar(X_axis-0.2, df_last7days['WR3_1'], width=0.4, bottom=(df_last7days['WR1_1']+ df_last7days['WR2_1']), color=color_wr[2], label='kWh', linewidth=4.0, zorder=2)
+        ax1.bar(X_axis-0.2, df_last7days['WR4_1'],width=0.4, bottom=(df_last7days['WR1_1']+ df_last7days['WR2_1']+ df_last7days['WR3_1']), color=color_wr[3], label='kWh', linewidth=4.0, zorder=3)
         
-        ax1.bar(X_axis+0.2, df_last7days['HausGesamt'],width=0.4, color=f'{colors["bar-color"]}', label='kWh')
+        ax1.bar(X_axis+0.2, df_last7days['hausgesamt_1'],width=0.4, color=f'{colors["bar-color"]}', label='kWh')
 
         #multiple bar chart
         # ax1.bar(X_axis-0.3, df_last7days['WR1_1'],width=0.1, color=color_wr[0], label='kWh', linewidth=4.0)
@@ -281,18 +288,37 @@ def make_graph(year, path, plot_filename, colors, warning):
 
 
     ax1.set_xticks(X_axis)
-    ax1.set_xticklabels([x.strftime("%Y-%m-%d") for x in df_last7days['Datum']], fontsize=28)
+    ax1.set_xticklabels([x.strftime("%Y-%m-%d") for x in df_last7days['Datum']])
 
-    ax1.tick_params(labelcolor='white',labelsize=22, width=3, labelright='true')
+    ax1.tick_params(labelcolor='white',labelsize=40, width=3, labelright='true')
 
-    ax1.set_ylim(0, max_value_7days + 10)
+    ax1.set_ylim(0, max_value_7days + 30)
     plt.yticks(np.arange(0, max_value_7days+10, 10))
     ax1.grid(True, linestyle='-.', color=colors['text-color']) 
     ax1.spines['bottom'].set_color(colors['text-color'])
     ax1.spines['bottom'].set_linestyle('-.')
-    for p in ax1.patches:
-        #ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(-5, -25), textcoords='offset points', color=colors['text-color'] ,fontsize=28, weight='bold')
-        ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height() ), ha='center', va='center', xytext=(-5, 0), textcoords='offset points', color=colors['text-color'] ,fontsize=40, weight='bold')
+    # for p in ax1.patches:
+    #     #ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(-5, -25), textcoords='offset points', color=colors['text-color'] ,fontsize=28, weight='bold')
+    #     ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height() ), ha='center', va='center', xytext=(-5, 0), textcoords='offset points', color=colors['text-color'] ,fontsize=40, weight='bold')
+
+    # .patches is everything inside of the chart
+    for rect in ax1.patches:
+        # Find where everything is located
+        height = rect.get_height()
+        width = rect.get_width()
+        x = rect.get_x()
+        y = rect.get_y()
+        
+        # The height of the bar is the data value and can be used as the label
+        label_text = f'{height}'  # f'{height:.2f}' to format decimal values
+        
+        # ax.text(x, y, text)
+        label_x = x + width / 2
+        label_y = y + height / 2
+
+        # plot only when height is greater than specified value
+        if height > 0:
+            ax1.text(label_x, label_y, label_text, ha='center', va='center',  color='black', fontsize=40, weight='bold')
 
     plt.text(0.9, 0.8, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=40, style='italic', transform=ax1.transAxes,
                 bbox=dict(boxstyle="round, pad=1",
