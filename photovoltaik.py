@@ -436,11 +436,11 @@ def get_values_from_pv(start_date, end_date, last_date, url, path, key):
             if 'Yield' in response.text:
                 break
             else:
-                print ("sleep 120 sec")
-                time.sleep(120)
+                print ("sleep 20 sec")
+                time.sleep(20)
         except Exception as e:
-            print ("sleep 120 sec", e)
-            time.sleep(120)
+            print ("sleep 20 sec", e)
+            time.sleep(20)
             next
 
     for k, v in response.__dict__.items():
