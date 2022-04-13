@@ -1,4 +1,7 @@
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 import os
 
 def get_values_from_pv(url):
@@ -12,7 +15,18 @@ def get_values_from_pv(url):
     'end_time': '00:00'
     }
 
-    response = requests.post(url,headers=headers, data=data, allow_redirects=False)
+    session = requests.Session()
+    retry = Retry(connect=7, backoff_factor=10)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+
+    #response = session.post(url,headers=headers, data=data, allow_redirects=False)
+    response = session.get(url)
+    
+    print (response.status_code)
+
+    #response = requests.post(url,headers=headers, data=data, allow_redirects=False)
 
     for k, v in response.__dict__.items():
         if k == '_content':
@@ -36,7 +50,12 @@ def get_values_from_pv(url):
             values.update(value_dict)
 
 
-url= 'http://192.168.178.58/cgi-bin/download.csv/'
+url_mike= 'http://192.168.178.58/cgi-bin/download.csv/'
+url_done= 'http://192.168.178.199/cgi-bin/download.csv/'
 
-os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
-get_values_from_pv(url)
+url_mike = 'http://192.168.178.199/cgi-bin/online.cgi'
+
+
+#os.system('sudo vpnc /etc/vpnc/default.conf')      #VPN connect
+get_values_from_pv(url_mike)
+#get_values_from_pv(url_done)
