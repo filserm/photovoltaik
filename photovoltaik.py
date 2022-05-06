@@ -431,7 +431,7 @@ def get_values_from_pv(start_date, end_date, last_date, url, path, key):
     for i in range(1,25):
         try: 
             print (f'try - {i} ...') 
-            response = requests.post(url,headers=headers, data=data, allow_redirects=False,verify=False, timeout=60)
+            response = requests.post(url,headers=headers, data=data, allow_redirects=False,verify=False, timeout=300)
             print (response.text)
             if 'Yield' in response.text:
                 break
