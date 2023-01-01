@@ -56,8 +56,9 @@ else:
 
 myhost = os.uname()[1]
 print (myhost)
-vpn_flag = 1 if myhost.startswith('rasp') else 0
-    
+#vpn_flag = 1 if myhost.startswith('rasp') else 0
+vpn_flag = 1
+
 global last_values_pv
 last_values_pv = {}
 max_value_this_year_dict = {}
@@ -165,12 +166,17 @@ def get_date(url, path):
         start_date = datetime.datetime.strptime(last_date, '%d.%m.%Y') + datetime.timedelta(days=1)
         start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
         if start_date > yesterday: start_date = yesterday
+        
         end_date = yesterday
     except:
         print (f'database has no values yet')
         start_date = datetime.datetime.strptime(yesterday, '%d.%m.%Y') - datetime.timedelta(days=MAX_DAYS)
         start_date = str(start_date.strftime("%d.%m.%Y"))[0:10]
         end_date = yesterday
+
+    #dirty workaround ;) 
+    if '01.01.' in start_date:
+        start_date = yesterday
 
     print (f'getting values for {start_date} - {end_date}')
     return start_date, end_date, last_date
