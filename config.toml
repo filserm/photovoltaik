@@ -1,0 +1,11 @@
+[MIKE]
+URL = "http://192.168.178.58/cgi-bin/download.csv/"
+PLOTNAME = "mike_pv_"
+DB = "mike_raw_data.db"
+WARNING = "50"
+LIMIT_WECHSELRICHTER = 5000
+
+    [MIKE.COLORS]
+    BACKGROUND-COLOR = "#121212"
+    BAR-COLOR = "azure"
+    TEXT-COLOR = "ivory"

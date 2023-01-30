@@ -5,3 +5,4 @@ pandas
 python-telegram-bot
 b2sdk
 python-dotenv
+tomli >= 1.1.0 ; python_version < "3.11"
