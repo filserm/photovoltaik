@@ -51,12 +51,10 @@ else:
 
 #years = [2020,2019]
 
-gs_folder = "solar-anlage-gm/"
-
 if sys.platform.startswith('win'):
     dir = 'C:/PV/photovoltaik'
 else:
-    dir = '/home/mike/photovoltaik/data'
+    dir = '~/gh_projects/photovoltaik/data'
 
 myhost = os.uname()[1]
 print (myhost)
