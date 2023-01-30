@@ -141,11 +141,11 @@ def start_workflow(key, value, years):
 
         make_graph(year, path, plot_filename, colors, warning)
 
-        if 'rasp' in hostname:
+        if 'Pi' in hostname:
             upload_plot(filename=plot_filename)  
          
 
-    if 'rasp' in hostname:
+    if 'Pi' in hostname:
         #upload only on raspberry
         upload_plot(filename=plotlast7days)
         upload_plot(filename=plotwr)
