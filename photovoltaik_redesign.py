@@ -117,7 +117,7 @@ def start_workflow(anlage="", years=""):
                             "text-color": anlage.textcolor
                           }
 
-        warning         = anlage.warning
+        warning         = int(anlage.warning)
         path            = os.path.join(os.path.expanduser(dir), db)     
 
         if int(year) == int(current_year):
