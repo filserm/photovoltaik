@@ -109,7 +109,7 @@ def start_workflow(anlage="", years=""):
     print (f'Erstelle Auswertung fuer {anlage} - Jahr: {years}')
     for year in years:
         url             = anlage.url
-        plot_filename   = anlage.plot_filename + str(year) + '.png'
+        plot_filename   = anlage.plotname + str(year) + '.png'
         db              = anlage.db
         colors          = {
                             "background-color" : anlage.backgroundcolor,
