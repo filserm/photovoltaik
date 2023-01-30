@@ -9,13 +9,17 @@ import matplotlib.ticker as plticker
 import pandas as pd
 import numpy as np
 import calendar
-from b2blaze import B2
+#from b2blaze import B2
 import time
 import smtplib, ssl
 from email.mime.text import MIMEText
 #set environment variables B2_KEY_ID and B2_APPLICATION_KEY
 from telegram.ext import Updater
 import socket
+import b2sdk.v2 as b2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 global bucketname
 bucketname = 'photovoltaik'
@@ -95,11 +99,13 @@ MAX_DAYS = 4000
 
 def main(years):
     if vpn_flag == 1: vpn('on')
+    
     # fuer jede Anlage einen Durchlauf
     for key, value in anlagen.items():
         start_workflow(key, value, years)
     #send_email()
     if vpn_flag == 1: vpn('off')
+    
 
 def vpn(switch):
     if switch == 'on':
@@ -138,13 +144,13 @@ def start_workflow(key, value, years):
         make_graph(year, path, plot_filename, colors, warning)
 
         if 'rasp' in hostname:
-            upload_plot(plot_filename)  
+            upload_plot(filename=plot_filename)  
          
 
     if 'rasp' in hostname:
         #upload only on raspberry
-        upload_plot(plotlast7days)
-        upload_plot(plotwr)
+        upload_plot(filename=plotlast7days)
+        upload_plot(filename=plotwr)
         
         if history_flag == 1:
             html(value['plotname'], years)
@@ -501,56 +507,45 @@ def get_values_from_pv(start_date, end_date, last_date, url, path, key):
         
         break      
 
+def upload_plot(filename=''):
+    info = b2.InMemoryAccountInfo()
+    b2_api = b2.B2Api(info)
 
-def upload_plot(plot_filename):
-    global gs_folder
-    cmd1 = f'gsutil -h "Cache-Control:no-cache,max-age=0" cp -a public-read {plot_filename} gs://{gs_folder}'
-    cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{plot_filename}'
-    os.system(cmd1)
-    os.system(cmd2)
+    application_key_id = os.getenv("B2_KEY_ID")
+    application_key = os.getenv("B2_APPLICATION_KEY")
 
-def upload_html(html_out_filename):
-    global gs_folder
-    cmd1 = f'gsutil -h "Cache-Control:no-cache,max-age=0" cp -a public-read html_output/{html_out_filename} gs://{gs_folder}'
-    cmd2 = f'gsutil acl ch -u AllUsers:R gs://{gs_folder}{html_out_filename}'
-    os.system(cmd1)
-    os.system(cmd2)
+    b2_api.authorize_account("production", application_key_id, application_key)
+    bucket = b2_api.get_bucket_by_name("photovoltaik")
+    
+    from pathlib import Path
+    local_file = Path(filename).resolve()
+    metadata = {"key": "value"}
+
+    uploaded_file = bucket.upload_local_file(
+    local_file=local_file,
+    file_name=filename,
+    file_infos=metadata,
+    )
+    print(b2_api.get_download_url_for_fileid(uploaded_file.id_))
 
 
-def upload_plot(plot_filename):
-    b2 = B2()
-    bucket = b2.buckets.get(bucketname)
-    plot_file = open(plot_filename, 'rb')
-    #bucket.files.upload(contents=plot_file, file_name=plot_filename)
-    #try it 10 times
-    for i in range(1,10):
-        try: 
-            print (f'try - {i} ...') 
-            rc = bucket.files.upload(contents=plot_file, file_name=plot_filename)
-            if 'backblaze' in rc.url:
-                break
-        except Exception as e:
-            print ("sleep 120 sec", e)
-            time.sleep(120)
-            next
+# def upload_plot(plot_filename):
+#     b2 = B2()
+#     bucket = b2.buckets.get(bucketname)
+#     plot_file = open(plot_filename, 'rb')
+#     #bucket.files.upload(contents=plot_file, file_name=plot_filename)
+#     #try it 10 times
+#     for i in range(1,10):
+#         try: 
+#             print (f'try - {i} ...') 
+#             rc = bucket.files.upload(contents=plot_file, file_name=plot_filename)
+#             if 'backblaze' in rc.url:
+#                 break
+#         except Exception as e:
+#             print ("sleep 120 sec", e)
+#             time.sleep(120)
+#             next
 
-def upload_html_b2(html_out_filename):    
-    b2 = B2()
-    bucket = b2.buckets.get(bucketname)
-
-    html_file = open(html_out_filename, 'rb')
-    #bucket.files.upload(contents=html_file, file_name=html_out_filename)
-    #try it 10 times
-    for i in range(1,10):
-        try: 
-            print (f'try - {i} ...') 
-            rc = bucket.files.upload(contents=html_file, file_name=html_out_filename)
-            if 'backblaze' in rc.url:
-                break
-        except Exception as e:
-            print ("sleep 120 sec", e)
-            time.sleep(120)
-            next
 
 def html(plotname, years):
     jahre = years[:]

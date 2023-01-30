@@ -1,5 +1,7 @@
 requests
 matplotlib
 pandas
-b2blaze
+#b2blaze
 python-telegram-bot
+b2sdk
+python-dotenv
