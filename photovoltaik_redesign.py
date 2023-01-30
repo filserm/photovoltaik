@@ -122,7 +122,7 @@ def start_workflow(anlage="", years=""):
 
         if int(year) == int(current_year):
            start_date, end_date, last_date = get_date(url, path)
-           get_values_from_pv(start_date, end_date, last_date, url, path, key)
+           get_values_from_pv(start_date, end_date, last_date, url, path, name)
 
         make_graph(year, path, plot_filename, colors, warning)
 
