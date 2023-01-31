@@ -321,7 +321,6 @@ def make_graph(path="", year="", plot_filename="", colors="", warning=""):
 
     #### END END END Wechselrichter END END END #####
 
-    datafile.close()
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
     df['Datum']      = pd.to_datetime(df['Datum'])
 
