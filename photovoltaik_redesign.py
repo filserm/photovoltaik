@@ -404,7 +404,7 @@ def make_graph(path="", year="", plot_filename="", colors="", warning=""):
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
     
 
-def get_values_from_pv(start_date="", end_date="", last_date="", url="", path="", key=""):
+def get_values_from_pv(start_date="", end_date="", last_date="", url="", path="", name=""):
     global last_values_pv
     headers={}
 
@@ -481,9 +481,9 @@ def get_values_from_pv(start_date="", end_date="", last_date="", url="", path=""
         try:
             wr3    = int(item[3]) 
             wr4    = int(item[4])
-            last_values_pv[key] = [k, hausgesamt, wr1, wr2, wr3, wr4]
+            last_values_pv[name] = [k, hausgesamt, wr1, wr2, wr3, wr4]
         except:
-            last_values_pv[key] = [k, hausgesamt, wr1, wr2]
+            last_values_pv[name] = [k, hausgesamt, wr1, wr2]
         
         break      
 
