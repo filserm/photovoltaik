@@ -59,10 +59,7 @@ else:
 
 #years = [2020,2019]
 
-if sys.platform.startswith('win'):
-    dir = 'C:/PV/photovoltaik'
-else:
-    dir = '~/gh_projects/photovoltaik/data'
+dir = '/home/mike/gh_projects/photovoltaik/data'
 
 myhost = os.uname()[1]
 print (myhost)
