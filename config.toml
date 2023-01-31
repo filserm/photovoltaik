@@ -4,6 +4,7 @@ PLOTNAME = "mike_pv_"
 DB = "mike_raw_data.db"
 WARNING = "50"
 LIMIT_WECHSELRICHTER = 5000
+PATH_DATA = "/home/mike/gh_projects/photovoltaik/"
 
     [MIKE.COLORS]
     BACKGROUND-COLOR = "#121212"
