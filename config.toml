@@ -9,3 +9,16 @@ LIMIT_WECHSELRICHTER = 5000
     BACKGROUND-COLOR = "#121212"
     BAR-COLOR = "azure"
     TEXT-COLOR = "ivory"
+
+
+[HALLE]
+URL = "http://192.168.178.199/cgi-bin/download.csv/"
+PLOTNAME = "halle_pv_"
+DB = "halle_raw_data.db"
+WARNING = "50"
+LIMIT_WECHSELRICHTER = 5000
+
+    [HALLE.COLORS]
+    BACKGROUND-COLOR = "#121212"
+    BAR-COLOR = "aqua"
+    TEXT-COLOR = "ivory"
