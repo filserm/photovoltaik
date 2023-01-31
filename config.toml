@@ -5,6 +5,7 @@ DB = "mike_raw_data.db"
 WARNING = "50"
 LIMIT_WECHSELRICHTER = 5000
 PATH_DATA = "/home/mike/gh_projects/photovoltaik/"
+PATH_PNG = "/home/mike/gh_projects/photovoltaik/png/"
 
     [MIKE.COLORS]
     BACKGROUND-COLOR = "#121212"
@@ -18,6 +19,8 @@ PLOTNAME = "halle_pv_"
 DB = "halle_raw_data.db"
 WARNING = "50"
 LIMIT_WECHSELRICHTER = 5000
+PATH_DATA = "/home/mike/gh_projects/photovoltaik/"
+PNG_PATH = "/home/mike/gh_projects/photovoltaik/png/"
 
     [HALLE.COLORS]
     BACKGROUND-COLOR = "#121212"

@@ -78,6 +78,7 @@ class PVAnlage():
         self.db = toml_config[self.name.upper()]["DB"]
         self.warning = toml_config[self.name.upper()]["WARNING"]
         self.path_data = toml_config[self.name.upper()]["PATH_DATA"]
+        self.path_png = toml_config[self.name.upper()]["PATH_PNG"]
         self.limit_wechselrichter = toml_config[self.name.upper()]["LIMIT_WECHSELRICHTER"]
         self.backgroundcolor = toml_config[self.name.upper()]["COLORS"]["BACKGROUND-COLOR"]
         self.barcolor = toml_config[self.name.upper()]["COLORS"]["BAR-COLOR"]
@@ -115,13 +116,14 @@ def start_workflow(anlage="", years=""):
 
         warning         = int(anlage.warning)
         path_data       = anlage.path_data
+        path_png       = anlage.path_png
         path_db         = os.path.join(os.path.expanduser(path_data)+"db/", db)    
 
         if int(year) == int(current_year):
            start_date, end_date, last_date = get_date(url=url, path=path_db)
            get_values_from_pv(start_date=start_date, end_date=end_date, last_date=last_date, url=url, path=path_db, name=anlage.name)
 
-        make_graph(path=path_db, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
+        make_graph(path_db=path_db, path_png=path_png, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
 
         if 'Pi' in hostname:
             upload(filename=plot_filename)  
@@ -167,12 +169,12 @@ def get_date(url="", path=""):
     print (f'getting values for {start_date} - {end_date}')
     return start_date, end_date, last_date
 
-def make_graph(path="", year="", plot_filename="", colors="", warning=""):
+def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", warning=""):
     global plotlast7days, plotwr, max_value_this_year_dict
     
     name = plot_filename.split('_')
 
-    pv_data = shelve.open(path)
+    pv_data = shelve.open(path_db)
     #filename = 'values.xlsx'
     #datafile = open(filename, 'w')
     #datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\tWR3\tWR4\n')
@@ -254,7 +256,7 @@ def make_graph(path="", year="", plot_filename="", colors="", warning=""):
     #plt.show()    
     plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
     fig.tight_layout()
-    fig.savefig(f'{plotlast7days}', dpi=400, facecolor=colors['background-color'])
+    fig.savefig(f'{path_png}{plotlast7days}', dpi=400, facecolor=colors['background-color'])
 
     #### END END END last 7 days END END END #####
 
@@ -317,7 +319,7 @@ def make_graph(path="", year="", plot_filename="", colors="", warning=""):
     #plt.show() 
     plotwr = plot_filename.split('_')[0]+'_wr.png'
     fig1.tight_layout()
-    fig1.savefig(f'{plotwr}', dpi=400, facecolor=colors['background-color'])
+    fig1.savefig(f'{path_png}{plotwr}', dpi=400, facecolor=colors['background-color'])
 
     #### END END END Wechselrichter END END END #####
 
@@ -400,7 +402,7 @@ def make_graph(path="", year="", plot_filename="", colors="", warning=""):
 
     #plt.show()
     fig.tight_layout()
-    fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
+    fig.savefig(f'{path_png}{plot_filename}', dpi=400, facecolor=colors['background-color'])
     
 
 def get_values_from_pv(start_date="", end_date="", last_date="", url="", path="", name=""):
