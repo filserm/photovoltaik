@@ -115,13 +115,13 @@ def start_workflow(anlage="", years=""):
 
         warning         = int(anlage.warning)
         path_data       = anlage.path_data
-        path_db         = os.path.join(os.path.expanduser(path_data)+"db/", db)     
+        path_db         = os.path.join(os.path.expanduser(path_data)+"db/", db)    
 
         if int(year) == int(current_year):
            start_date, end_date, last_date = get_date(url=url, path=path_db)
            get_values_from_pv(start_date=start_date, end_date=end_date, last_date=last_date, url=url, path=path_db, name=anlage.name)
 
-        make_graph(path=path_data, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
+        make_graph(path=path_db, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
 
         if 'Pi' in hostname:
             upload(filename=plot_filename)  
