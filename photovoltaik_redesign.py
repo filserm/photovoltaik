@@ -59,8 +59,6 @@ else:
 
 #years = [2020,2019]
 
-dir = '/home/mike/gh_projects/photovoltaik/data'
-
 myhost = os.uname()[1]
 print (myhost)
 #vpn_flag = 1 if myhost.startswith('rasp') else 0
@@ -79,6 +77,7 @@ class PVAnlage():
         self.plotname = toml_config[self.name.upper()]["PLOTNAME"]
         self.db = toml_config[self.name.upper()]["DB"]
         self.warning = toml_config[self.name.upper()]["WARNING"]
+        self.path_data = toml_config[self.name.upper()]["PATH_DATA"]
         self.limit_wechselrichter = toml_config[self.name.upper()]["LIMIT_WECHSELRICHTER"]
         self.backgroundcolor = toml_config[self.name.upper()]["COLORS"]["BACKGROUND-COLOR"]
         self.barcolor = toml_config[self.name.upper()]["COLORS"]["BAR-COLOR"]
@@ -115,13 +114,14 @@ def start_workflow(anlage="", years=""):
                           }
 
         warning         = int(anlage.warning)
-        path            = os.path.join(os.path.expanduser(dir), db)     
+        path_data       = anlage.path_data
+        path_db         = os.path.join(os.path.expanduser(path_data)+"db/", db)     
 
         if int(year) == int(current_year):
-           start_date, end_date, last_date = get_date(url, path)
-           get_values_from_pv(start_date, end_date, last_date, url, path, anlage.name)
+           start_date, end_date, last_date = get_date(url=url, path=path_db)
+           get_values_from_pv(start_date=start_date, end_date=end_date, last_date=last_date, url=url, path=path_db, name=anlage.name)
 
-        make_graph(year, path, plot_filename, colors, warning)
+        make_graph(path=path_data, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
 
         if 'Pi' in hostname:
             upload(filename=plot_filename)  
@@ -133,10 +133,10 @@ def start_workflow(anlage="", years=""):
         upload(filename=plotwr)
         
         if history_flag == 1:
-            html(value['plotname'], years)
+            html(plotname=plot_filename, years=years, path=path_data)
             upload(filename=html_out_filename)    
 
-def get_date(url, path):
+def get_date(url="", path=""):
     last_date = ''
     #read max date from shelve db
     try:
@@ -167,15 +167,15 @@ def get_date(url, path):
     print (f'getting values for {start_date} - {end_date}')
     return start_date, end_date, last_date
 
-def make_graph(year, path, plot_filename, colors, warning):
+def make_graph(path="", year="", plot_filename="", colors="", warning=""):
     global plotlast7days, plotwr, max_value_this_year_dict
     
     name = plot_filename.split('_')
 
     pv_data = shelve.open(path)
-    filename = 'values.xlsx'
-    datafile = open(filename, 'w')
-    datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\tWR3\tWR4\n')
+    #filename = 'values.xlsx'
+    #datafile = open(filename, 'w')
+    #datafile.write('Datum\tJahr\tMonatabs\tMonat\tHausgesamt\tWR1\tWR2\tWR3\tWR4\n')
     
     df = pd.DataFrame(columns=('Datum', 'Jahr', 'Monatabs', 'Monat', 'Tag', 'HausGesamt', 'WR1', 'WR2', 'WR3', 'WR4'))
     #idx = pd.date_range('01-01-2011', '12-31-2020')
@@ -404,7 +404,7 @@ def make_graph(year, path, plot_filename, colors, warning):
     fig.savefig(f'{plot_filename}', dpi=400, facecolor=colors['background-color'])
     
 
-def get_values_from_pv(start_date, end_date, last_date, url, path, key):
+def get_values_from_pv(start_date="", end_date="", last_date="", url="", path="", key=""):
     global last_values_pv
     headers={}
 
@@ -513,18 +513,18 @@ def upload(filename=''):
     print(b2_api.get_download_url_for_fileid(uploaded_file.id_))
 
 
-def html(plotname, years):
+def html(plotname="", years="", path=""):
     jahre = years[:]
     print ('jahre', jahre)
     add_line=[]
     i = 1
-    html_template = os.path.join(os.path.expanduser(dir+"/html_template"), 'photovoltaik_html_template.html')
+    html_template = os.path.join(os.path.expanduser(path+"/html_template"), 'photovoltaik_html_template.html')
     html_template_file = open(html_template, 'r')
     html_code = html_template_file.readlines()
 
     global html_out_filename, html_filename
     html_out_filename = f'{plotname[:-1]}.html'
-    html_filename = os.path.join(os.path.expanduser(dir+"/html_output"), html_out_filename)
+    html_filename = os.path.join(os.path.expanduser(path+"/html_output"), html_out_filename)
     htmlfile = open (html_filename, 'w')
 
     for item in html_code:
