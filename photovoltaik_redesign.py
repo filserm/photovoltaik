@@ -126,7 +126,7 @@ def start_workflow(anlage="", years=""):
         make_graph(path_db=path_db, path_png=path_png, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
 
         if 'Pi' in hostname:
-            upload(filename=plot_filename, path=path_data)  
+            upload(filename=plot_filename, path=path_png)  
          
 
     if 'Pi' in hostname:
@@ -136,7 +136,7 @@ def start_workflow(anlage="", years=""):
         
         if history_flag == 1:
             html(plotname=plot_filename, years=years, path=path_data)
-            upload(filename=html_out_filename, path=path_png)    
+            upload(filename=html_out_filename, path=path_data)    
 
 def get_date(url="", path=""):
     last_date = ''
