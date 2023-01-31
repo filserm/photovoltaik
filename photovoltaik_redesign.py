@@ -116,7 +116,7 @@ def start_workflow(anlage="", years=""):
 
         warning         = int(anlage.warning)
         path_data       = anlage.path_data
-        path_png       = anlage.path_png
+        path_png        = anlage.path_png
         path_db         = os.path.join(os.path.expanduser(path_data)+"db/", db)    
 
         if int(year) == int(current_year):
@@ -126,17 +126,17 @@ def start_workflow(anlage="", years=""):
         make_graph(path_db=path_db, path_png=path_png, year=year, plot_filename=plot_filename, colors=colors, warning=warning)
 
         if 'Pi' in hostname:
-            upload(filename=plot_filename)  
+            upload(filename=plot_filename, path=path_data)  
          
 
     if 'Pi' in hostname:
         #upload only on raspberry
-        upload(filename=plotlast7days)
-        upload(filename=plotwr)
+        upload(filename=plotlast7days, path=path_png)
+        upload(filename=plotwr, path=path_png)
         
         if history_flag == 1:
             html(plotname=plot_filename, years=years, path=path_data)
-            upload(filename=html_out_filename)    
+            upload(filename=html_out_filename, path=path_png)    
 
 def get_date(url="", path=""):
     last_date = ''
@@ -488,7 +488,7 @@ def get_values_from_pv(start_date="", end_date="", last_date="", url="", path=""
         
         break      
 
-def upload(filename=''):
+def upload(filename='', path=""):
         
     info = b2.InMemoryAccountInfo()
     b2_api = b2.B2Api(info)
@@ -501,9 +501,9 @@ def upload(filename=''):
     
     from pathlib import Path
     if 'html' in filename:
-        local_file = Path("html_output/"+filename).resolve()
+        local_file = Path(path + "html_output/"+filename).resolve()
     else:
-        local_file = Path(filename).resolve()
+        local_file = Path(path + filename).resolve()
     metadata = {"key": "value"}
 
     uploaded_file = bucket.upload_local_file(
