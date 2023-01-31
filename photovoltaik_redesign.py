@@ -24,7 +24,7 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
-with open("config.toml", mode="rb") as fp:
+with open("/home/mike/gh_projects/photovoltaik/config.toml", mode="rb") as fp:
     toml_config = tomllib.load(fp)
 
 load_dotenv()
