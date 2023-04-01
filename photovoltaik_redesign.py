@@ -85,10 +85,11 @@ class PVAnlage():
         self.textcolor = toml_config[self.name.upper()]["COLORS"]["TEXT-COLOR"]
 
 mike = PVAnlage("mike")
+halle = PVAnlage("halle")
 
 anlagen = []
 anlagen.append(mike)
-
+anlagen.append(halle)
 
 MAX_DAYS = 10000
 
