@@ -226,71 +226,48 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
         color_7day = 'green'
 
     print ("background: ", colors['background-color'])
-    fig, ax1 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
-    
+    # Create a figure with two subplots
+    fig, (ax1, ax3) = plt.subplots(2, 1, figsize=(20, 7), facecolor=colors['background-color'])
+
+    # Set the title for the first plot
     ax1.set_title(f'PV Anlage {name[0].upper()}- Ertrag in kWh der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
 
+    # Set the facecolor for the first plot
     ax1.set_facecolor(colors['background-color'])
-    #ax1.plot(df_last7days.index, df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
+
+    # Plot the data for the first plot
     ax1.plot(df_last7days['Datum'], df_last7days['HausGesamt'], color=color_7day, marker="D", label='kWh', markersize = 12, linewidth=4.0, zorder=2)
-    #ax1.set_xticks(df_last7days.index)
     ax1.set_xticks(df_last7days['Datum'])
     ax1.tick_params(labelcolor='white',labelsize=22, width=3, labelright='true')
     ax1.set_ylim(0, max_value_7days + 50)
     ax1.grid(True, linestyle='-.', color=colors['text-color']) 
     ax1.spines['bottom'].set_color(colors['text-color'])
     ax1.spines['bottom'].set_linestyle('-.')
-    #for p in ax1.patches:
-    #    ax1.annotate("%d" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='center', xytext=(0, 10), textcoords='offset points', color=colors['text-color'] ,fontsize=14)
 
+    # Add the text for the first plot
     plt.text(1, 0.9, f'{kum_value_7days}\nErtrag kummuliert', ha='center', color='white', size=20, style='italic', transform=ax1.transAxes,
                 bbox=dict(boxstyle="round, pad=1",
-                          fc=color_7day,
-                          ec='lightgrey',
-                          alpha=0.5
-                   )
+                        fc=color_7day,
+                        ec='lightgrey',
+                        alpha=0.5
+                )
     )
 
     for i in range(len(df_last7days)):
-        #print (df_last7days['Datum'][i], df_last7days['HausGesamt'][i])
         plt.text( df_last7days['Datum'][i], df_last7days['HausGesamt'][i]+7, str(int(df_last7days['HausGesamt'][i])), color='white', weight='bold', size=32)
-    
-    #plt.show()    
-    plotlast7days = plot_filename.split('_')[0]+'_last7days.png'
-    fig.tight_layout()
-    fig.savefig(f'{path_png}{plotlast7days}', dpi=400, facecolor=colors['background-color'])
 
-    #### END END END last 7 days END END END #####
+    # Set the facecolor for the second plot
+    ax3.set_facecolor(colors['background-color'])
 
-
-    #### Wechselrichter #####
+    # Prepare the data for the second plot
     color_wr = ["#006D2C", "#31A354","#74C476", "#a5f2a7"]
     text_color_wr = 'silver'
-
     df_wr = df.head(7)
     df_wr = df_wr.copy()
-    #df_wr.drop(df_wr.head(1).index,inplace=True)
     df_wr['Datum'] = pd.to_datetime(df_wr['Datum'], dayfirst=True)
     df_wr.sort_values(by=['Datum'], inplace=True)
 
-    print (df_wr)
-
-    fig1, ax3 = plt.subplots(figsize=(20, 3.5), facecolor=colors['background-color'])
-    
-    #ax3.set_title(f'PV Anlage {name[0].upper()}- Ertrag pro WR der letzten 7 Tage', fontdict={'fontsize': 40, 'fontweight': 'bold', 'color':colors['text-color']})
-
-    ax3.set_facecolor(colors['background-color'])
-
-    ##stacked bar chart
-    #ax3.bar(df_wr['Datum'], df_wr['WR1'], color=color_wr[0], label='kWh', linewidth=4.0, zorder=2)
-    #ax3.bar(df_wr['Datum'], df_wr['WR2'], bottom=df_wr['WR1'], color=color_wr[1], label='kWh', linewidth=4.0, zorder=3)
-    # try:
-    #     ax3.bar(df_wr['Datum'], df_wr['WR3'], bottom=(df_wr['WR1'] +df_wr['WR2']), color=color_wr[2], label='kWh', linewidth=4.0, zorder=4)
-    #     ax3.bar(df_wr['Datum'], df_wr['WR4'], bottom=(df_wr['WR1'] +df_wr['WR2']+ df_wr['WR3']), color=color_wr[3], label='kWh', linewidth=4.0, zorder=5)
-    # except:
-    #     pass
-
-    ## multiple bar chart 
+    # Plot the data for the second plot
     X_axis = np.arange(len(df_wr['Datum']))
     if df_wr.iloc[0, 8] == -1:  # dann WR3 nicht vorhanden
         ax3.bar(X_axis-0.2, df_wr['WR1'],width=0.4, color=color_wr[0], label='kWh')
@@ -301,29 +278,14 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
         ax3.bar(X_axis+0.1, df_wr['WR3'],width=0.2, color=color_wr[2], label='kWh', linewidth=4.0)
         ax3.bar(X_axis+0.3, df_wr['WR4'],width=0.2, color=color_wr[3], label='kWh', linewidth=4.0)
 
-    #ax3.set_xticks(df_wr['Datum'])
-    #plt.xticks(X_axis, df_wr['Datum'])
-    #ax3.tick_params(labelcolor=text_color_wr,labelsize=22, width=3, labelright='true')
-    #ax3.set_ylim(0, max_value_7days + 50)
-
-    # ax3.tick_params(
-    #     axis='y',          # changes apply to the x-axis
-    #     which='both',      # both major and minor ticks are affected
-    #     bottom=True,      # ticks along the bottom edge are off
-    #     top=True,         # ticks along the top edge are off
-    #     labelbottom=True,
-    #     labelsize=22,
-    #     labelcolor='white'
-    # ) 
-
     ax3.grid(True, linestyle='-.', color=text_color_wr) 
     ax3.spines['bottom'].set_color(text_color_wr)
     ax3.spines['bottom'].set_linestyle('-.')
-    #plt.show() 
-    plotwr = plot_filename.split('_')[0]+'_wr.png'
-    fig1.tight_layout()
-    fig1.savefig(f'{path_png}{plotwr}', dpi=400, facecolor=colors['background-color'])
 
+    # Save the figure with both plots
+    plotwr = plot_filename.split('_')[0]+'_wr.png'
+    fig.tight_layout()
+    fig.savefig(f'{path_png}{plotwr}', dpi=400, facecolor=colors['background-color'])
     #### END END END Wechselrichter END END END #####
 
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
