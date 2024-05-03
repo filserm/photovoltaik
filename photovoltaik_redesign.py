@@ -212,8 +212,8 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
     max_value_this_year_dict[name[0]] = [max_val_day, max_val_val]
 
     df_last7days = df.head(7)
+    df_last7days = df_last7days.copy()
     df_last7days['Datum'] = pd.to_datetime(df_last7days['Datum'], dayfirst=True)
-    df_last7days.sort_values(by=['Datum'], inplace=True)
     kum_value_7days = df_last7days['HausGesamt'].sum().astype(int) 
     max_value_7days = df_last7days['HausGesamt'].max()
 
@@ -267,7 +267,7 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
     text_color_wr = 'silver'
 
     df_wr = df.head(7)
-    #df_wr.drop(df_wr.head(1).index,inplace=True)
+    df_wr = df_wr.copy()
     df_wr['Datum'] = pd.to_datetime(df_wr['Datum'], dayfirst=True)
     df_wr.sort_values(by=['Datum'], inplace=True)
 
@@ -290,7 +290,7 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
 
     ## multiple bar chart 
     X_axis = np.arange(len(df_wr['Datum']))
-    if df_wr.iloc[0][8] == -1:  # dann WR3 nicht vorhanden
+    if df_wr.iloc[0].iloc[8] == -1:  # dann WR3 nicht vorhanden
         ax3.bar(X_axis-0.2, df_wr['WR1'],width=0.4, color=color_wr[0], label='kWh')
         ax3.bar(X_axis+0.2, df_wr['WR2'],width=0.4, color=color_wr[1], label='kWh') 
     else:
@@ -341,8 +341,8 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
     df_avg = df.loc[df.groupby("Monatabs")["haus_sum_monatabs"].idxmax()]
     df_avg1 = df_avg[df_avg['haus_sum_monatabs'] != 0]
     df_avg2 = df_avg1[df_avg1['Jahr'] != int(current_year)]
-    df_mean = df_avg2.groupby("Monat").agg({"haus_sum_monatabs" : np.mean}).reset_index()
-    
+    df_mean = df_avg2.groupby("Monat").agg({"haus_sum_monatabs" : "mean"}).reset_index()
+
     df_max = df.loc[df.groupby("Monat")["haus_sum_monatabs"].idxmax()]
     df_max['haus_max_monat']     = df_avg['haus_sum_monatabs']
 
