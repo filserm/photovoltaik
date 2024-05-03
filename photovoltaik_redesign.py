@@ -89,7 +89,7 @@ halle = PVAnlage("halle")
 
 anlagen = []
 anlagen.append(mike)
-anlagen.append(halle)
+#anlagen.append(halle)
 
 MAX_DAYS = 10000
 
@@ -325,7 +325,8 @@ def make_graph(path_db="", path_png="", year="", plot_filename="", colors="", wa
     #### END END END Wechselrichter END END END #####
 
     df['HausGesamt'] = df['HausGesamt'].astype(float)  
-    df['Datum']      = pd.to_datetime(df['Datum'])
+    #df['Datum']      = pd.to_datetime(df['Datum'])
+    df['Datum'] = pd.to_datetime(df['Datum'], format="%d.%m.%Y %H:%M:%S")
 
     #print (df.tail(30))
     #df.index = pd.DatetimeIndex(df.Datum)
